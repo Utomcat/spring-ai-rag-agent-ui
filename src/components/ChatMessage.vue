@@ -1,32 +1,3 @@
-<script setup>
-import { computed, ref } from 'vue'
-import { marked } from 'marked'
-import { ArrowDown, ChatDotRound, Document } from '@element-plus/icons-vue'
-
-marked.setOptions({ breaks: true })
-
-const props = defineProps({
-  role: String,
-  content: String,
-  refs: { type: Array, default: () => [] },
-  /** 用户消息右侧头像 */
-  userAvatarSrc: { type: String, default: '' },
-  userAvatarText: { type: String, default: '?' },
-  userAvatarStyle: { type: Object, default: null },
-})
-
-const html = computed(() => marked.parse(props.content || ''))
-
-/** 助手引用默认收起 */
-const refsOpen = ref(false)
-
-function toggleRefs() {
-  refsOpen.value = !refsOpen.value
-}
-
-const refsCount = computed(() => props.refs?.length ?? 0)
-</script>
-
 <template>
   <div class="row" :class="role === 'USER' ? 'user' : 'bot'">
     <template v-if="role === 'USER'">
@@ -87,6 +58,36 @@ const refsCount = computed(() => props.refs?.length ?? 0)
     </template>
   </div>
 </template>
+
+<script lang="ts" setup>
+import { marked } from 'marked'
+import { computed, ref } from 'vue'
+import { RefItem } from '../data/ref/RefItem'
+import { ArrowDown, ChatDotRound, Document } from '@element-plus/icons-vue'
+
+marked.setOptions({ breaks: true })
+
+const props = defineProps<{
+  role?: string,
+  content?: string,
+  refs: RefItem[],
+  /** 用户消息右侧头像 */
+  userAvatarSrc?: string,
+  userAvatarText?: string,
+  userAvatarStyle?: Record<string, any>,
+}>()
+
+const html = computed(() => marked.parse(props.content || ''))
+
+/** 助手引用默认收起 */
+const refsOpen = ref(false)
+
+function toggleRefs() {
+  refsOpen.value = !refsOpen.value
+}
+
+const refsCount = computed(() => props.refs?.length ?? 0)
+</script>
 
 <style scoped>
 .row {

@@ -1,19 +1,19 @@
 <template>
   <div>
     <div class="page-title">文档管理</div>
-    <el-card style="height: 88vh;" shadow="hover" class="box">
+    <el-card style="height: 91vh;" shadow="hover" class="box">
       <div class="toolbar">
         <span class="toolbar-label">文档类别：</span>
-        <el-select v-model="categoryId" clearable placeholder="选择分类" style="width: 180px" @change="() => { page = 1; load() }">
+        <el-select v-model="categoryId" clearable placeholder="选择分类" style="width: 180px" @change="handleChangeCategory">
           <el-option v-for="c in categories" :key="c.id" :label="c.name" :value="c.id"/>
         </el-select>
         <span class="toolbar-label">标题/文件名：</span>
-        <el-input v-model="keyword" placeholder="搜索标题/文件名" clearable style="width: 220px" @clear="() => { page = 1; load() }"/>
-        <el-button type="primary" @click="() => { page = 1; load() }">查询</el-button>
+        <el-input v-model="keyword" placeholder="搜索标题/文件名" clearable style="width: 220px" @clear="handleClearKeyword"/>
+        <el-button type="primary" @click="handleSearch">查询</el-button>
         <el-button type="success" :icon="Upload" @click="openUpload">上传解析</el-button>
       </div>
-      <el-table style="height: 78vh;" :data="list" v-loading="loading" stripe>
-        <el-table-column prop="id" label="ID" width="70"/>
+      <el-table style="height: 81vh;" :data="list" v-loading="loading" stripe>
+        <el-table-column prop="id" label="ID" width="70" v-if="false"/>
         <el-table-column prop="title" label="标题" min-width="160"/>
         <el-table-column prop="fileName" label="文件" min-width="140" show-overflow-tooltip/>
         <el-table-column prop="fileType" label="类型" width="80"/>
@@ -41,6 +41,7 @@
           v-model:page-size="size"
           v-model:current-page="page"
           @current-change="load"
+          style="height: 2vh;"
       />
     </el-card>
 
@@ -101,7 +102,7 @@ const uploadTitle = ref<string>('')
 const fileList = ref<UploadUserFile[]>([])
 const uploading = ref(false)
 
-async function loadCats() {
+const loadCats = async () => {
   const res = await listCategories({
     page: 1,
     size: 1000,
@@ -110,7 +111,7 @@ async function loadCats() {
   categories.value = res.data
 }
 
-async function load() {
+const load = async () => {
   loading.value = true
   try {
     const res = await fetchDocumentPage({
@@ -130,14 +131,14 @@ async function load() {
   }
 }
 
-function openUpload() {
+const openUpload = () => {
   uploadCat.value = categoryId.value || (categories.value[0]?.id ?? Number(null))
   uploadTitle.value = ''
   fileList.value = []
   uploadOpen.value = true
 }
 
-async function doUpload() {
+const doUpload = async () => {
   const f = fileList.value[0]?.raw
   if (!f || !uploadCat.value) return
   uploading.value = true
@@ -154,7 +155,7 @@ async function doUpload() {
   }
 }
 
-async function del(row: Document) {
+const del = async (row: Document) => {
   await ElMessageBox.confirm(`删除文档「${row.title}」及向量？`, '提示')
   await deleteDocument(row.id!)
   await load()
@@ -166,21 +167,40 @@ const DOC_STATUS_CN: Record<string, string> = {
   FAIL: '解析失败',
 }
 
-function formatDocStatus(status: string) {
+const formatDocStatus = (status: string) => {
   if (status == null || status === '') return '—'
   return DOC_STATUS_CN[status] ?? status
 }
 
-function categoryName(id: number) {
+const categoryName = (id: number) => {
   if (id == null) return '—'
   const c = categories.value.find((x) => x.id === id)
   return c?.name ?? '—'
 }
 
+const handleChangeCategory = () => {
+  page.value = 1
+  size.value = 10
+  load()
+}
+
+const handleClearKeyword = () => {
+  page.value = 1
+  size.value = 10
+  keyword.value = ''
+  load()
+}
+
+const handleSearch = () => {
+  page.value = 1
+  size.value = 10
+  load()
+}
+
 onMounted(async () => {
   await loadCats()
   if (categories.value.length > 0) {
-    categoryId.value = categories.value[0].id
+    categoryId.value = Number(categories.value[0].id)
   }
   await load()
 })

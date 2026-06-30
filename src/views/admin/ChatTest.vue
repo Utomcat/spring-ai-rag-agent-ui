@@ -63,7 +63,8 @@ async function submit() {
       sessionId: null,
       categoryIds: ids.length ? ids : null,
     })
-    answerHtml.value = marked.parse(res.answer || '') as string
+    console.debug("ask 的消息 res: ", res)
+    answerHtml.value = marked.parse(res.data.answer || '') as string
   } finally {
     loading.value = false
   }

@@ -1,13 +1,16 @@
 <template>
   <div>
     <div class="page-title">知识分类</div>
-    <el-card shadow="hover" class="box">
+    <el-card shadow="hover" class="box" style="height: 91vh;">
       <div class="toolbar">
-        <el-input v-model="categoryName" placeholder="搜索分类名称" clearable style="width: 220px" @clear="load" />
-        <el-input v-model="categoryDescription" placeholder="搜索分类描述" clearable style="width: 220px" @clear="load" />
-        <el-button type="primary" icon="Plus" @click="openCreate">新增分类</el-button>
+        <span class="toolbar-label">分类名称：</span>
+        <el-input v-model="categoryName" placeholder="搜索分类名称" clearable style="width: 180px" @clear="() => { page = 1; load() }" />
+        <span class="toolbar-label">分类描述：</span>
+        <el-input v-model="categoryDescription" placeholder="搜索分类描述" clearable style="width: 180px" @clear="() => { page = 1; load() }" />
+        <el-button type="primary" @click="() => { page = 1; load() }">查询</el-button>
+        <el-button type="success" icon="Plus" @click="openCreate">新增分类</el-button>
       </div>
-      <el-table :data="list" v-loading="loading" stripe>
+      <el-table :data="list" v-loading="loading" stripe style="height: 81vh;">
         <el-table-column prop="id" label="ID" width="70" />
         <el-table-column prop="name" label="名称" />
         <el-table-column prop="description" label="描述" show-overflow-tooltip />
@@ -34,6 +37,7 @@
           background
           @current-change="load"
           @size-change="sizeChange"
+          style="height: 3.5vh;"
       />
     </el-card>
 
@@ -146,8 +150,19 @@ onMounted(load)
 
 <style scoped>
 .toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
   margin-bottom: 12px;
+  align-items: center;
 }
+
+.toolbar-label {
+  font-weight: 500;
+  white-space: nowrap;
+  color: #606266;
+}
+
 .box {
   border-radius: 16px;
 }

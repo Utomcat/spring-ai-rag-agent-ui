@@ -22,14 +22,15 @@
   </div>
 </template>
 
-<script setup>
+<script lang="ts" setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { listSessions } from '../../api/chat.ts'
 import { formatDateTime } from '../../utils/date.ts'
+import {SessionResponse} from "../../data/chat/SessionResponse.ts";
 
 const router = useRouter()
-const list = ref([])
+const list = ref<SessionResponse[]>([])
 const loading = ref(false)
 
 async function load() {
@@ -42,7 +43,7 @@ async function load() {
   }
 }
 
-function openSession(row) {
+function openSession(row: SessionResponse) {
   router.push({ path: '/user/chat', query: { sessionId: String(row.id) } })
 }
 

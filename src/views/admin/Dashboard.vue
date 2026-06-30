@@ -38,26 +38,26 @@
       </el-col>
     </el-row>
 
-    <el-row :gutter="16" class="charts">
-      <el-col :xs="24" :lg="12">
+    <el-row :gutter="16" class="charts" style="height: 75vh;">
+      <el-col :xs="24" :lg="12" :md="6">
         <el-card shadow="hover" class="chart-card">
           <template #header><span>近 7 日 · 助手回答次数</span></template>
           <div id="chart-line" class="chart-box"></div>
         </el-card>
       </el-col>
-      <el-col :xs="24" :lg="12">
+      <el-col :xs="24" :lg="12" :md="6">
         <el-card shadow="hover" class="chart-card">
           <template #header><span>近 7 日 · 新注册用户</span></template>
           <div id="chart-bar" class="chart-box"></div>
         </el-card>
       </el-col>
-      <el-col :xs="24" :lg="12">
+      <el-col :xs="24" :lg="12" :md="6">
         <el-card shadow="hover" class="chart-card">
           <template #header><span>分类文档数量占比</span></template>
           <div id="chart-pie" class="chart-box"></div>
         </el-card>
       </el-col>
-      <el-col :xs="24" :lg="12">
+      <el-col :xs="24" :lg="12" :md="6">
         <el-card shadow="hover" class="chart-card">
           <template #header><span>分类文档数量（条形）</span></template>
           <div id="chart-hbar" class="chart-box"></div>
@@ -68,13 +68,27 @@
 </template>
 
 <script lang="ts" setup>
-import * as echarts from 'echarts'
-import type {EChartsType} from 'echarts'
-import {fetchOverview} from '../../api/stats.ts'
+import * as echarts from 'echarts/core'
+import type {EChartsType} from 'echarts/core'
+import { fetchOverview } from '../../api/stats'
+import { CanvasRenderer } from 'echarts/renderers'
 import StatCard from '../../components/StatCard.vue'
-import {ref, onMounted, onBeforeUnmount, nextTick} from 'vue'
-import {Stats, DayStat, CategoryShare} from "../../data/stats/Stats";
-import {User, Document, Cpu, ChatDotRound} from '@element-plus/icons-vue'
+import { LineChart, BarChart, PieChart } from 'echarts/charts'
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { Stats, DayStat, CategoryShare } from "../../data/stats/Stats";
+import { User, Document, Cpu, ChatDotRound } from '@element-plus/icons-vue'
+import { GridComponent, TooltipComponent, LegendComponent, GraphicComponent } from 'echarts/components'
+
+echarts.use([
+  LineChart,
+  BarChart,
+  PieChart,
+  GridComponent,
+  TooltipComponent,
+  LegendComponent,
+  GraphicComponent,
+  CanvasRenderer
+])
 
 const loading = ref<boolean>(true)
 const overview = ref<Stats>({})
@@ -224,10 +238,11 @@ onBeforeUnmount(disposeCharts)
 .chart-card {
   border-radius: 16px;
   margin-bottom: 16px;
+  height: 38vh;
 }
 
 .chart-box {
-  height: 280px;
+  height: 30vh;
   width: 100%;
 }
 </style>

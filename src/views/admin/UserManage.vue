@@ -1,13 +1,13 @@
 <template>
   <div>
     <div class="page-title">用户管理</div>
-    <el-card class="box" shadow="hover">
+    <el-card class="box" shadow="hover" style="height: 91vh;">
       <div class="toolbar">
-        <el-input v-model="keyword" placeholder="搜索用户名/姓名" clearable style="width: 220px" @clear="load" />
+        <el-input v-model="keyword" placeholder="搜索用户名/姓名" clearable style="width: 8vw;height: 2.5vh;" @clear="load" />
         <el-button type="primary" @click="() => { page = 1; size = 10; load() }">查询</el-button>
         <el-button type="success" icon="Plus" @click="openCreate">新增用户</el-button>
       </div>
-      <el-table :data="list" v-loading="loading" stripe>
+      <el-table :data="list" v-loading="loading" stripe style="height: 81vh;">
         <el-table-column prop="id" label="ID" width="70" />
         <el-table-column prop="username" label="用户名" />
         <el-table-column prop="realName" label="姓名" />
@@ -37,6 +37,7 @@
         background
         @current-change="load"
         @size-change="sizeChange"
+        style="height: 1.5vh;"
       />
     </el-card>
 

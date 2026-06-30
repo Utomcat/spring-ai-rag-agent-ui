@@ -67,17 +67,18 @@
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted, computed } from 'vue'
-import { ElMessage } from 'element-plus'
+<script lang="ts" setup>
+import { User } from '../../data/user/User'
+import { fileUrl } from '../../utils/files'
 import { Plus } from '@element-plus/icons-vue'
-import { fetchMe, updateProfile, changePassword, uploadAvatar } from '../../api/user.ts'
+import { ref, onMounted, computed } from 'vue'
+import { useUserStore } from '../../stores/user'
 import { formatDateTime } from '../../utils/date.ts'
-import { fileUrl } from '../../utils/files.ts'
-import { avatarFallbackBg } from '../../utils/avatarFallback.ts'
-import { useUserStore } from '../../stores/user.ts'
+import { avatarFallbackBg } from '../../utils/avatarFallback'
+import { ElMessage, type UploadRequestOptions } from 'element-plus'
+import { fetchMe, updateProfile, changePassword, uploadAvatar } from '../../api/user'
 
-const profile = ref({})
+const profile = ref<User>({})
 const pwd = ref({ old: '', neu: '', neu2: '' })
 const userStore = useUserStore()
 const avatarUploading = ref(false)
@@ -102,10 +103,10 @@ async function saveProfile() {
       realName: profile.value.realName,
     })
   }
-  load()
+  await load()
 }
 
-async function onAvatarRequest(option) {
+async function onAvatarRequest(option: UploadRequestOptions) {
   avatarUploading.value = true
   try {
     const fd = new FormData()
@@ -122,22 +123,25 @@ async function onAvatarRequest(option) {
     ElMessage.success('头像已更新')
     option.onSuccess(res)
   } catch (e) {
-    option.onError(e)
+    option.onError(e as any)
   } finally {
     avatarUploading.value = false
   }
 }
 
 async function savePwd() {
-  if (!pwd.value.neu || pwd.value.neu.length < 6) {
-    ElMessage.warning('新密码至少 6 位')
+  if (!pwd.value.neu || pwd.value.neu.length < 8) {
+    ElMessage.warning('新密码至少 8 位')
     return
   }
   if (pwd.value.neu !== pwd.value.neu2) {
     ElMessage.warning('两次新密码不一致')
     return
   }
-  await changePassword(pwd.value.old, pwd.value.neu)
+  await changePassword({
+    oldPassword: pwd.value.old,
+    newPassword: pwd.value.neu,
+  })
   ElMessage.success('密码已修改')
   pwd.value = { old: '', neu: '', neu2: '' }
 }
