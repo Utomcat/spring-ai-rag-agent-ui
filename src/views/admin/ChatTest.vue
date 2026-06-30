@@ -64,7 +64,7 @@ async function submit() {
       categoryIds: ids.length ? ids : null,
     })
     console.debug("ask 的消息 res: ", res)
-    answerHtml.value = marked.parse(res.data.answer || '') as string
+    answerHtml.value = marked.parse(res.answer || '') as string
   } finally {
     loading.value = false
   }

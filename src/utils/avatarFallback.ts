@@ -12,7 +12,7 @@ const PAIRS = [
   ['#4338ca', '#6366f1'],
 ]
 
-export function avatarFallbackBg(seed) {
+export function avatarFallbackBg(seed: string | undefined | null) {
   const s = String(seed || '?')
   let h = 0
   for (let i = 0; i < s.length; i += 1) {
