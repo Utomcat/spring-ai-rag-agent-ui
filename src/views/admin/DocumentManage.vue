@@ -1,79 +1,18 @@
 <template>
   <div>
     <div class="page-title">文档管理</div>
-    <el-card shadow="hover" class="box">
+    <el-card style="height: 88vh;" shadow="hover" class="box">
       <div class="toolbar">
-        <el-row>
-          <!-- 知识库分类筛选条件列 -->
-          <el-col :span="8" sm="100" style="
-            display: flex;
-            /*flex-direction: row;
-            flex-wrap: nowrap;
-            align-content: center;
-            justify-content: center;*/
-            gap: 8px;
-            align-items: center;
-          ">
-              <span style="
-                white-space: nowrap;
-                font-weight: 500;
-                display: flex;
-                flex-direction: row;
-                flex-wrap: nowrap;
-                align-content: center;
-                justify-content: center;
-                align-items: center;
-                width: 24px;
-               ">分类筛选：</span>
-              <el-select v-model="categoryId" clearable placeholder="分类筛选" style="
-                display: flex;
-                width: 200px;
-                flex-direction: row;
-                flex-wrap: nowrap;
-                align-content: center;
-                justify-content: center;
-                align-items: center;
-              " @change="() => { page = 1; size = 10; load() }">
-                <el-option v-for="c in categories" :key="c.id" :label="c.name" :value="c.id"/>
-            </el-select>
-          </el-col>
-          <!-- 知识库文件名查询条件列 -->
-          <el-col :span="8" sm="100" style="
-            display: flex;
-            flex-flow: row;
-            flex-direction: row;
-            flex-wrap: nowrap;
-            align-content: center;
-            justify-content: center;
-            align-items: center;">
-              <span style="
-              display: flex;
-              flex-flow: row;
-              white-space: nowrap;
-              font-weight: 500;
-              flex-direction: row;
-              flex-wrap: nowrap;
-              align-content: center;
-              justify-content: center;
-              align-items: center;">标题/文件名：</span>
-              <el-input v-model="keyword" placeholder="标题/文件名" clearable style="
-              width: 200px;
-              display: flex;
-              flex-flow: row;
-              flex-direction: row;
-              flex-wrap: nowrap;
-              align-content: center;
-              justify-content: center;
-              align-items: center;" @clear="load"/>
-          </el-col>
-          <!-- 按钮列 -->
-          <el-col :span="8" sm="100">
-            <el-button type="primary" @click="() => { page = 1; load() }">查询</el-button>
-            <el-button type="success" :icon="Upload" @click="openUpload">上传解析</el-button>
-          </el-col>
-        </el-row>
+        <span class="toolbar-label">文档类别：</span>
+        <el-select v-model="categoryId" clearable placeholder="选择分类" style="width: 180px" @change="() => { page = 1; load() }">
+          <el-option v-for="c in categories" :key="c.id" :label="c.name" :value="c.id"/>
+        </el-select>
+        <span class="toolbar-label">标题/文件名：</span>
+        <el-input v-model="keyword" placeholder="搜索标题/文件名" clearable style="width: 220px" @clear="() => { page = 1; load() }"/>
+        <el-button type="primary" @click="() => { page = 1; load() }">查询</el-button>
+        <el-button type="success" :icon="Upload" @click="openUpload">上传解析</el-button>
       </div>
-      <el-table :data="list" v-loading="loading" stripe>
+      <el-table style="height: 78vh;" :data="list" v-loading="loading" stripe>
         <el-table-column prop="id" label="ID" width="70"/>
         <el-table-column prop="title" label="标题" min-width="160"/>
         <el-table-column prop="fileName" label="文件" min-width="140" show-overflow-tooltip/>
@@ -240,6 +179,9 @@ function categoryName(id: number) {
 
 onMounted(async () => {
   await loadCats()
+  if (categories.value.length > 0) {
+    categoryId.value = categories.value[0].id
+  }
   await load()
 })
 </script>
@@ -250,6 +192,13 @@ onMounted(async () => {
   gap: 10px;
   flex-wrap: wrap;
   margin-bottom: 12px;
+  align-items: center;
+}
+
+.toolbar-label {
+  font-weight: 500;
+  white-space: nowrap;
+  color: #606266;
 }
 
 .box {
