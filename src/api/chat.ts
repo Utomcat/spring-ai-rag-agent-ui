@@ -1,12 +1,14 @@
-import request from '../utils/request.ts'
-import {AskRequest} from "../data/chat/AskRequest.ts";
-import {AskResponse} from "../data/chat/AskResponse.ts";
-import {SessionResponse} from "../data/chat/SessionResponse.ts";
-import {MessagesResponse} from "../data/chat/MessagesResponse.ts";
-import {MultiResult} from "../data/result/MultiResult.ts";
+import request from '../utils/request'
+import {Result} from "../data/result/Result";
+import {AskRequest} from "../data/chat/AskRequest";
+import {AskResponse} from "../data/chat/AskResponse";
+import {buildPageQuery} from "../data/page/PageParams";
+import {MultiResult} from "../data/result/MultiResult";
+import {SessionResponse} from "../data/chat/SessionResponse";
+import {MessagesResponse} from "../data/chat/MessagesResponse";
 
 /** 问答/流式生成：向量检索 + Ollama 推理可能较慢（本地大模型常超过 2 分钟） */
-const CHAT_ASK_TIMEOUT_MS = 600000
+const CHAT_ASK_TIMEOUT_MS = 3600000
 
 /**
  * 提问
@@ -14,7 +16,7 @@ const CHAT_ASK_TIMEOUT_MS = 600000
  * @param data - 提问请求参数
  * @return Promise 响应数据
  */
-export function ask(data: AskRequest): Promise<AskResponse> {
+export function ask(data: AskRequest): Promise<Result<AskResponse>> {
   return request.post('/api/chat/ask', data, { timeout: CHAT_ASK_TIMEOUT_MS })
 }
 
@@ -23,8 +25,13 @@ export function ask(data: AskRequest): Promise<AskResponse> {
  *
  * @return Promise 响应数据
  */
-export function listSessions(): Promise<MultiResult<SessionResponse>> {
-  return request.get('/api/chat/session')
+export function listSessions(params: Record<string, any>): Promise<MultiResult<SessionResponse>> {
+  const flatParams = buildPageQuery({
+    page: params.page,
+    size: params.size,
+    condition: params.condition
+  })
+  return request.get('/api/chat/session', { params: flatParams })
 }
 
 /**
