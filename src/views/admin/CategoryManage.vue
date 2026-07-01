@@ -64,19 +64,26 @@ import {Category} from "../../data/category/Category";
 import { listCategories, saveCategory, deleteCategory } from '../../api/category'
 import {CategoryQueryCondition} from "../../data/category/CategoryQueryCondition";
 
-const loading = ref(false)
+const loading = ref<boolean>(false)
+// 当前所在页码
+const page = ref<number>(1)
+// 每页数量
+const size = ref<number>(10)
+// 数据总数
+const total = ref<number>(0)
+// 是否禁用分页
+const disabled = ref<boolean>(false)
 
-const page = ref(1)
-const size = ref(10)
-const total = ref(0)
-const disabled = ref(false)
+// 知识库分类名称查询条件
+const categoryName = ref<string>("")
+// 知识库分类描述查询条件
+const categoryDescription = ref<string>("")
 
-const categoryName = ref("")
-const categoryDescription = ref("")
-
+// 知识库分类列表
 const list = ref<Category[]>([])
-
+// 是否显示弹窗
 const dlg = ref(false)
+// 弹窗数据表封装
 const form = ref<Category>({
   id: Number(null),
   name: '',
@@ -128,7 +135,7 @@ const openEdit = (row: Category) => {
   dlg.value = true
 }
 
-async function save() {
+const save = async () => {
   await saveCategory(form.value)
   dlg.value = false
   await load()

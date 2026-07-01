@@ -2,10 +2,13 @@
   <div class="chat-wrap">
     <el-card class="card" shadow="hover">
       <div class="layout">
+        <!-- 会话列表-->
         <aside class="side">
+          <!-- 新建会话按钮 -->
           <div class="side-head">
             <el-button type="primary" icon="Plus" round size="small" @click="newChat">新对话</el-button>
           </div>
+          <!-- 会话列表 -->
           <div class="sess-list">
             <div
                 v-for="s in sessions"
@@ -19,7 +22,23 @@
               <el-button class="del" text type="danger" icon="Delete" @click="removeSession(s.id, $event)"/>
             </div>
           </div>
+          <!-- 分页插件 -->
+          <div class="side-pagination">
+            <el-pagination
+                v-model:current-page="page"
+                v-model:page-size="size"
+                :page-sizes="[10, 100, 200, 300, 400]"
+                :size="componentSize"
+                :disabled="disabled"
+                :background="background"
+                layout="total, sizes, prev, pager, next, jumper"
+                :total="total"
+                @size-change="handleSizeChange"
+                @current-change="handleCurrentChange"
+            />
+          </div>
         </aside>
+        <!-- 打开的会话 -->
         <main class="main">
           <div class="filters">
             <el-select
@@ -66,6 +85,7 @@
                 :rows="3"
                 placeholder="输入问题，Enter 发送（Shift+Enter 换行）"
                 @keydown.enter.exact.prevent="send"
+                style="width: 68vw;"
             />
             <el-button type="primary" class="send" :loading="sending" @click="send">发送</el-button>
           </div>
@@ -78,6 +98,7 @@
 <script lang="ts" setup>
 import {useRoute} from 'vue-router'
 import {fileUrl} from '../../utils/files'
+import {ComponentSize} from "element-plus"
 import {useUserStore} from '../../stores/user'
 import {formatDateTime} from '../../utils/date'
 import {listCategories} from '../../api/category'
@@ -93,29 +114,52 @@ import {ask, deleteSession, listMessages, listSessions} from '../../api/chat'
 const route = useRoute()
 const userStore = useUserStore()
 
-const sessions = ref<SessionResponse[]>([])
-const messages = ref<MessagesResponse[]>([])
-const activeId = ref<number>(Number(null))
-const categoryIds = ref<number[]>([])
-const categories = ref<Category[]>([])
-const input = ref<string>('')
-const sending = ref<boolean>(false)
+/*当前页码*/
+const page = ref<number>(1)
+/*当前页数据数量*/
+const size = ref<number>(100)
+/*数据总量*/
+const total = ref<number>(0)
+/*分页大小, 可选值 ['large' | 'default' | 'small']*/
+const componentSize = ref<ComponentSize>('small')
+/*是否为分页按钮添加背景色*/
+const background = ref<boolean>(false)
+/*是否禁用分页*/
+const disabled = ref<boolean>(false)
 
+/*当前登录用户所进行过会话的会话列表存储对象 - 为避免当前会话列表加载过多, 只进行当前页的历史会话展示*/
+const sessions = ref<SessionResponse[]>([])
+/*指定会话的消息列表*/
+const messages = ref<MessagesResponse[]>([])
+/*当前激活的会话ID*/
+const activeId = ref<number>(Number(null))
+/*当前选中的知识库分类ID*/
+const categoryIds = ref<number[]>([])
+/*当前系统中拥有的知识库分类数据列表*/
+const categories = ref<Category[]>([])
+/*用户输入的内容*/
+const input = ref<string>('')
+/*用户是否发送中消息的状态*/
+const sending = ref<boolean>(false)
+/*会话消息 HTML 元素*/
+const msgEl = ref<HTMLElement | null>(null)
+
+/*聊天用户头像转换*/
 const chatUserAvatarSrc = computed(() =>
     userStore.user?.avatar ? fileUrl(userStore.user.avatar) : '',
 )
-
+/*用户聊天用户名*/
 const chatUserAvatarText = computed(() =>
     (userStore.user?.realName || userStore.user?.username || '?').slice(0, 1),
 )
 
+/*用户聊天头像样式*/
 const chatUserAvatarStyle = computed(() =>
     userStore.user?.avatar ? undefined : avatarFallbackBg(userStore.user?.username),
 )
 
-const msgEl = ref<HTMLElement | null>(null)
-
-async function scrollMsgToBottom() {
+/*聊天信息滚动到消息底部*/
+const scrollMsgToBottom = async () => {
   await nextTick()
   const el = msgEl.value
   if (el) {
@@ -123,7 +167,8 @@ async function scrollMsgToBottom() {
   }
 }
 
-function parseRefs(refs: string | string[]) {
+/*解析参考来源JSON格式内容*/
+const parseRefs = (refs: string | string[]) => {
   if (!refs) return []
   if (typeof refs === 'string') {
     try {
@@ -135,24 +180,32 @@ function parseRefs(refs: string | string[]) {
   return Array.isArray(refs) ? refs : []
 }
 
-async function loadSessions() {
-  let res = await listSessions();
+/*加载会话列表*/
+const loadSessions = async () => {
+  let res = await listSessions({
+    page: Number(page.value),
+    size: Number(size.value),
+    condition: {}
+  });
   sessions.value = res.data
 }
 
-async function selectSession(id: number) {
+/*会话选择*/
+const selectSession = async (id: number) => {
   activeId.value = id
   let res = await listMessages(id)
   messages.value = res.data
   await scrollMsgToBottom()
 }
 
-async function newChat() {
+/*新建聊天*/
+const newChat = async () => {
   activeId.value = Number(null)
   messages.value = []
 }
 
-async function send() {
+/*会话消息发送*/
+const send = async() => {
   const q = input.value.trim()
   if (!q || sending.value) return
   sending.value = true
@@ -174,9 +227,9 @@ async function send() {
       sessionId: sid,
       categoryIds: ids.length ? ids : null,
     })
-    activeId.value = Number(res.sessionId)
-    const ans = res.answer
-    const refs = res.references || []
+    activeId.value = Number(res.data.sessionId)
+    const ans = res.data.answer
+    const refs = res.data.references || []
     messages.value = [...messages.value, {
       id: Number(null),
       sessionId: sid,
@@ -193,20 +246,25 @@ async function send() {
   }
 }
 
-watch(
-    () => messages.value.length,
-    () => scrollMsgToBottom(),
-)
-
-watch(sending, (v) => {
-  if (v) scrollMsgToBottom()
-})
-
-async function removeSession(id: number, ev: MouseEvent) {
+/*删除会话*/
+const removeSession = async (id: number, ev: MouseEvent) => {
   ev.stopPropagation()
   await deleteSession(id)
   if (activeId.value === id) await newChat()
   await loadSessions()
+}
+
+/*分页大小改变监听事件*/
+const handleSizeChange = (val: number) => {
+  size.value = val
+  page.value = 1
+  loadSessions()
+}
+
+/*分页页码改变监听事件*/
+const handleCurrentChange = (val: number) => {
+  page.value = val
+  loadSessions()
 }
 
 onMounted(async () => {
@@ -229,23 +287,37 @@ watch(
       if (v) selectSession(Number(v))
     }
 )
+
+watch(
+    () => messages.value.length,
+    () => scrollMsgToBottom(),
+)
+
+watch(sending, (v) => {
+  if (v) scrollMsgToBottom()
+})
 </script>
 
 <style scoped>
 .chat-wrap {
   width: 100%;
+  height: 100%;
 }
 
 .card {
   border-radius: 20px;
   border: none;
   overflow: hidden;
+  width: 96vw;
+  height: 86vh;
+  margin: 20px auto;
 }
 
 .layout {
   display: grid;
-  grid-template-columns: 260px 1fr;
-  min-height: calc(100vh - 140px);
+  grid-template-columns: 320px 1fr;
+  width: 17vw;
+  height: 83vh;
 }
 
 .side {
@@ -254,6 +326,9 @@ watch(
   padding: 12px 10px;
   display: flex;
   flex-direction: column;
+  width: 16vw;
+  height: 80vh;
+  overflow: hidden;
 }
 
 .side-head {
@@ -263,6 +338,19 @@ watch(
 .sess-list {
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
+  margin-bottom: 8px;
+}
+
+.side-pagination {
+  display: flex;
+  flex-shrink: 0;
+  padding: 4px 0;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-content: center;
+  justify-content: center;
+  align-items: center;
 }
 
 .sess {
@@ -302,6 +390,10 @@ watch(
   display: flex;
   flex-direction: column;
   background: #f8fafc;
+  width: 77vw;
+  height: 80vh;
+  margin-left: 6vw;
+  overflow: hidden;
 }
 
 .filters {
@@ -407,10 +499,15 @@ watch(
   padding: 12px 16px 16px;
   background: #fff;
   border-top: 1px solid #e2e8f0;
-  align-items: flex-end;
+  align-items: center;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-content: center;
+  justify-content: flex-start;
 }
 
 .send {
-  height: 44px;
+  height: 4vh;
+  width: 4vw;
 }
 </style>

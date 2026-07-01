@@ -37,11 +37,20 @@ import {Category} from "../../data/category/Category";
 
 marked.setOptions({ breaks: true })
 
-const categories = ref<Category[]>([])
-const categoryIds = ref<number[]>([])
-const question = ref<string>('')
-const answerHtml = ref<string>('')
+/** 是否正在加载中 */
 const loading = ref<boolean>(false)
+
+/** 知识库分类 List  */
+const categories = ref<Category[]>([])
+/** 限定检索分类 ID 列表 */
+const categoryIds = ref<number[]>([])
+/** 会话 ID 初次进入页面录入问题时, 该值为 0 */
+const sessionId = ref<number>(Number(null))
+/** 用户录入的问题字符串 */
+const question = ref<string>('')
+/** 回答内容 HTML */
+const answerHtml = ref<string>('')
+
 
 onMounted(async () => {
   const res = await listCategories({
@@ -52,19 +61,20 @@ onMounted(async () => {
   categories.value = res.data
 })
 
-async function submit() {
+const submit = async() => {
   if (!question.value.trim()) return
   loading.value = true
   answerHtml.value = ''
   try {
     const ids = categoryIds.value.map((id) => Number(id)).filter((n) => !Number.isNaN(n))
     const res = await ask({
-      question: question.value,
-      sessionId: null,
-      categoryIds: ids.length ? ids : null,
+      question: String(question.value),
+      sessionId: Number(sessionId.value),
+      categoryIds: ids.length ? ids : [],
     })
-    console.debug("ask 的消息 res: ", res)
-    answerHtml.value = marked.parse(res.answer || '') as string
+    console.debug("在问答测试功能中, 当前用户发起问题后, 获取到的响应为: ", res)
+    sessionId.value = Number(res.data.sessionId)
+    answerHtml.value = marked.parse(res.data.answer || '') as string
   } finally {
     loading.value = false
   }

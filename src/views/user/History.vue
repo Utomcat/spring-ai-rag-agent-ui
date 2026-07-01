@@ -36,7 +36,10 @@ const loading = ref(false)
 async function load() {
   loading.value = true
   try {
-    const res = await listSessions()
+    const res = await listSessions({
+      page: 1,
+      size: 100
+    })
     list.value = res.data
   } finally {
     loading.value = false

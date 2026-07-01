@@ -1,29 +1,3 @@
-<script setup>
-import { computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { ChatDotRound, Clock, User, SwitchButton } from '@element-plus/icons-vue'
-import { useUserStore } from '../stores/user.ts'
-import { fileUrl } from '../utils/files.ts'
-import { avatarFallbackBg } from '../utils/avatarFallback.ts'
-
-const router = useRouter()
-const store = useUserStore()
-const avatarSrc = computed(() => fileUrl(store.user?.avatar))
-const avatarText = computed(() => (store.user?.realName || store.user?.username || '?').slice(0, 1))
-const headerAvStyle = computed(() =>
-  store.user?.avatar ? undefined : avatarFallbackBg(store.user?.username),
-)
-
-function go(p) {
-  router.push(p)
-}
-
-function logout() {
-  store.logout()
-  router.push('/login')
-}
-</script>
-
 <template>
   <el-container direction="vertical" class="user-shell">
     <el-header class="top">
@@ -66,6 +40,32 @@ function logout() {
     </el-main>
   </el-container>
 </template>
+
+<script setup>
+import { computed } from 'vue'
+import { useRouter } from 'vue-router'
+import { ChatDotRound, Clock, User, SwitchButton } from '@element-plus/icons-vue'
+import { useUserStore } from '../stores/user.ts'
+import { fileUrl } from '../utils/files.ts'
+import { avatarFallbackBg } from '../utils/avatarFallback.ts'
+
+const router = useRouter()
+const store = useUserStore()
+const avatarSrc = computed(() => fileUrl(store.user?.avatar))
+const avatarText = computed(() => (store.user?.realName || store.user?.username || '?').slice(0, 1))
+const headerAvStyle = computed(() =>
+    store.user?.avatar ? undefined : avatarFallbackBg(store.user?.username),
+)
+
+function go(p) {
+  router.push(p)
+}
+
+function logout() {
+  store.logout()
+  router.push('/login')
+}
+</script>
 
 <style scoped>
 .user-shell {
@@ -134,9 +134,11 @@ function logout() {
 }
 .main {
   padding: 20px 24px 32px;
-  max-width: 1180px;
+  max-width: 100vw;
+  max-height: 94vh;
   margin: 0 auto;
   width: 100%;
+  height: 100%;
   box-sizing: border-box;
 }
 </style>
