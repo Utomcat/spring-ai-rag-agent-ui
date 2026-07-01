@@ -4,7 +4,7 @@
   <img src="https://img.shields.io/badge/Vue-3.5-42b883?logo=vue.js&logoColor=white" alt="Vue Version" />
   <img src="https://img.shields.io/badge/Vite-8.0-646cff?logo=vite&logoColor=white" alt="Vite Version" />
   <img src="https://img.shields.io/badge/Element Plus-2.14-409eff?logo=element&logoColor=white" alt="Element Plus" />
-  <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
+  <img src="https://img.shields.io/badge/License-Apache--2.0-green" alt="License" />
 </p>
 
 基于 Vue 3 + Vite + Element Plus 构建的 **RAG（检索增强生成）企业知识库问答系统**
@@ -323,7 +323,7 @@ refactor: 重构请求拦截器
 
 ## 📄 开源协议
 
-本项目采用 [MIT](LICENSE) 协议开源。
+本项目采用 [Apache License 2.0](LICENSE) 协议开源。
 
 ## 📮 联系方式
 
