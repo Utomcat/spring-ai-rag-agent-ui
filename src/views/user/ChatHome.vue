@@ -54,7 +54,7 @@
           </div>
           <div ref="msgEl" class="message">
             <div v-if="!messages.length && !sending" class="empty">
-              向企业知识库提问，答案将基于已上传文档生成。
+              向企业知识库提问，答案将基于已上传文档生成。或调用工具进行网络搜索。
             </div>
             <ChatMessage
                 v-for="(m, idx) in messages"

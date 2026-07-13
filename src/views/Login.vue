@@ -21,7 +21,7 @@
           登 录
         </el-button>
       </el-form>
-      <div class="hint">演示账号：admin / user1 · 密码均为 12345678</div>
+      <div class="hint">演示账号：admin / user0 / user / testUser1 · 密码均为 12345678</div>
     </div>
   </div>
 </template>
