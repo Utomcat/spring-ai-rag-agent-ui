@@ -50,7 +50,7 @@
     - 多格式文档上传（txt / pdf / doc / docx / md）
     - 文档自动解析与向量化
     - 按分类筛选文档
-    - 批量删除文档
+    - 删除文档（同步清除向量数据）
 
 - **💬 聊天测试**
     - 管理员专用测试聊天界面
@@ -59,9 +59,10 @@
 #### 普通用户（USER）
 
 - **🤖 知识库问答**
-    - 智能对话界面，支持流式响应
+    - 智能对话界面，异步问答（带检索中状态提示）
     - Markdown 格式渲染答案
     - 显示引用来源文档
+    - 按分类限定问答范围（可选）
 
 - **📋 多会话管理**
     - 新建聊天会话
@@ -76,6 +77,8 @@
     - 查看/编辑个人资料
     - 修改密码
 
+> 💡 管理员同样可访问个人中心页面（`/admin/profile`）。
+
 ### 🔧 核心功能
 
 - **RAG 智能问答**：基于向量检索 + Ollama 大模型推理，答案可追溯来源文档
@@ -87,13 +90,13 @@
 ## 📁 项目结构
 
 ```
-spring-ai-rag-study-ui/
+spring-ai-rag-ui/
 ├── public/                     # 静态资源
 │   ├── favicon.svg             # 网站图标
 │   └── icons.svg               # SVG 图标
 ├── src/
 │   ├── api/                    # API 接口层
-│   │   ├── auth.ts             # 认证接口（登录、注册）
+│   │   ├── auth.ts             # 认证接口（登录）
 │   │   ├── category.ts         # 分类接口
 │   │   ├── chat.ts             # 聊天接口
 │   │   ├── document.ts         # 文档接口
@@ -101,7 +104,8 @@ spring-ai-rag-study-ui/
 │   │   └── user.ts             # 用户接口
 │   ├── assets/                 # 静态资源
 │   │   ├── hero.png            # 首页背景图
-│   │   └── vite.svg            # Vite 图标
+│   │   ├── vite.svg            # Vite 图标
+│   │   └── vue.svg             # Vue 图标
 │   ├── components/             # 公共组件
 │   │   ├── ChatMessage.vue     # 聊天消息组件（支持 Markdown）
 │   │   └── StatCard.vue        # 统计卡片组件
@@ -111,6 +115,7 @@ spring-ai-rag-study-ui/
 │   │   ├── document/           # 文档相关类型
 │   │   ├── login/              # 登录相关类型
 │   │   ├── page/               # 分页相关类型
+│   │   ├── ref/                # 引用来源类型
 │   │   ├── result/             # 统一响应结果类型
 │   │   ├── stats/              # 统计相关类型
 │   │   └── user/               # 用户相关类型
@@ -136,7 +141,7 @@ spring-ai-rag-study-ui/
 │   │   ├── user/               # 用户端页面
 │   │   │   ├── ChatHome.vue    # 智能问答首页
 │   │   │   ├── History.vue     # 历史记录
-│   │   │   └── Profile.vue     # 个人中心
+│   │   │   └── Profile.vue     # 个人中心（管理员/用户共用）
 │   │   └── Login.vue           # 登录页
 │   ├── App.vue                 # 根组件
 │   ├── main.js                 # 应用入口
@@ -146,6 +151,8 @@ spring-ai-rag-study-ui/
 ├── .npmrc                      # npm 配置
 ├── index.html                  # HTML 入口
 ├── package.json                # 项目依赖
+├── tsconfig.json               # TypeScript 配置
+├── tsconfig.node.json          # TypeScript Node 配置
 └── vite.config.js              # Vite 配置
 ```
 
@@ -183,7 +190,11 @@ npm run dev
 npm run build
 ```
 
-构建产物将输出到 `dist/` 目录，包含 Gzip 压缩优化。
+构建产物将输出到 `dist/` 目录，包含以下优化：
+
+- **Gzip 压缩**：大于 10KB 的资源自动生成 `.gz` 文件
+- **代码分包**：按依赖拆分为 `vue-vendor`、`element-plus`、`utils`、`charts` 等独立 chunk
+- **依赖预构建**：Vue、Vue Router、Pinia、Element Plus、Axios、ECharts 已配置 `optimizeDeps`
 
 ### 预览构建结果
 
@@ -216,7 +227,8 @@ server: {
 - **认证方式**：Bearer Token
 - **Token 存储**：localStorage
 - **请求拦截**：自动在请求头添加 `Authorization: Bearer <token>`
-- **响应拦截**：401 自动跳转登录页
+- **响应拦截**：401 / 403 自动清除登录态并跳转登录页
+- **超时处理**：默认请求超时 120s；问答请求超时 1 小时（本地大模型推理耗时较长）
 
 ### 环境变量
 
