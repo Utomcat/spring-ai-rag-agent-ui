@@ -136,7 +136,7 @@ const refsCount = computed(() => props.refs?.length ?? 0)
   text-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
 }
 .bubble {
-  max-width: min(680px, calc(92% - 48px));
+  /*max-width: min(680px, calc(92% - 48px));*/
   border-radius: 18px;
   padding: 12px 16px;
   box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
