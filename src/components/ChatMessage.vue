@@ -6,7 +6,7 @@
         <div v-if="refs?.length" class="refs">
           <div class="r-title">引用片段</div>
           <div v-for="(r, i) in refs" :key="i" class="ref-item">
-            <b>{{ r.title || '文档' }}</b>
+            <b>{{ r.title || "文档" }}</b>
             <span class="sub">#{{ r.docId }}</span>
             <p>{{ r.snippet }}</p>
           </div>
@@ -27,6 +27,7 @@
       </div>
       <div class="bubble">
         <div class="body" v-html="html" />
+        <span v-if="streaming" class="streaming-cursor">|</span>
         <div v-if="refs?.length" class="refs-bot">
           <button
             type="button"
@@ -35,18 +36,25 @@
             @click="toggleRefs"
           >
             <el-icon class="refs-trigger-doc"><Document /></el-icon>
-            <span class="refs-trigger-text">{{ refsOpen ? '收起引用' : '查看引用' }}</span>
+            <span class="refs-trigger-text">{{
+              refsOpen ? "收起引用" : "查看引用"
+            }}</span>
             <span class="refs-trigger-badge">{{ refsCount }}</span>
-            <el-icon class="refs-trigger-chevron" :class="{ 'is-open': refsOpen }">
+            <el-icon
+              class="refs-trigger-chevron"
+              :class="{ 'is-open': refsOpen }"
+            >
               <ArrowDown />
             </el-icon>
           </button>
           <transition name="refs-fold">
             <div v-show="refsOpen" class="refs-panel">
-              <div class="refs-panel-head">以下为检索到的文档片段，供核对。</div>
+              <div class="refs-panel-head">
+                以下为检索到的文档片段，供核对。
+              </div>
               <div v-for="(r, i) in refs" :key="i" class="ref-item">
                 <div class="ref-item-head">
-                  <b>{{ r.title || '文档' }}</b>
+                  <b>{{ r.title || "文档" }}</b>
                   <span class="sub">#{{ r.docId }}</span>
                 </div>
                 <p class="ref-snippet">{{ r.snippet }}</p>
@@ -60,33 +68,35 @@
 </template>
 
 <script lang="ts" setup>
-import { marked } from 'marked'
-import { computed, ref } from 'vue'
-import { RefItem } from '../data/ref/RefItem'
-import { ArrowDown, ChatDotRound, Document } from '@element-plus/icons-vue'
+import { marked } from "marked";
+import { computed, ref } from "vue";
+import { RefItem } from "../data/ref/RefItem";
+import { ArrowDown, ChatDotRound, Document } from "@element-plus/icons-vue";
 
-marked.setOptions({ breaks: true })
+marked.setOptions({ breaks: true });
 
 const props = defineProps<{
-  role?: string,
-  content?: string,
-  refs: RefItem[],
+  role?: string;
+  content?: string;
+  refs: RefItem[];
+  /** 是否正在流式生成中 */
+  streaming?: boolean;
   /** 用户消息右侧头像 */
-  userAvatarSrc?: string,
-  userAvatarText?: string,
-  userAvatarStyle?: Record<string, any>,
-}>()
+  userAvatarSrc?: string;
+  userAvatarText?: string;
+  userAvatarStyle?: Record<string, any>;
+}>();
 
-const html = computed(() => marked.parse(props.content || ''))
+const html = computed(() => marked.parse(props.content || ""));
 
 /** 助手引用默认收起 */
-const refsOpen = ref(false)
+const refsOpen = ref(false);
 
 function toggleRefs() {
-  refsOpen.value = !refsOpen.value
+  refsOpen.value = !refsOpen.value;
 }
 
-const refsCount = computed(() => props.refs?.length ?? 0)
+const refsCount = computed(() => props.refs?.length ?? 0);
 </script>
 
 <style scoped>
@@ -251,7 +261,11 @@ const refsCount = computed(() => props.refs?.length ?? 0)
   margin-top: 12px;
   padding: 12px 14px;
   border-radius: 14px;
-  background: linear-gradient(165deg, rgba(248, 250, 252, 0.95), rgba(239, 246, 255, 0.65));
+  background: linear-gradient(
+    165deg,
+    rgba(248, 250, 252, 0.95),
+    rgba(239, 246, 255, 0.65)
+  );
   border: 1px solid rgba(226, 232, 240, 0.95);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
@@ -297,5 +311,21 @@ const refsCount = computed(() => props.refs?.length ?? 0)
 .refs-fold-leave-to {
   opacity: 0;
   transform: translateY(-6px);
+}
+.streaming-cursor {
+  display: inline-block;
+  font-weight: 700;
+  color: #6366f1;
+  animation: blink 1s step-end infinite;
+  margin-left: 1px;
+}
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
 }
 </style>
