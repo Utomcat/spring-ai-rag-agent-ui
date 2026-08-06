@@ -48,7 +48,14 @@
           >停止生成</el-button
         >
       </el-form>
-      <div v-if="answerHtml" class="answer">
+      <div v-if="loading && !answerHtml" class="answer thinking-answer">
+        <span class="thinking-dots" aria-hidden="true"
+          ><span class="dot"></span><span class="dot"></span
+          ><span class="dot"></span></span
+        >
+        <span class="thinking-text">{{ statusText || "正在思考，请稍候" }}</span>
+      </div>
+      <div v-else-if="answerHtml" class="answer">
         <span v-html="answerHtml" />
         <span v-if="streaming" class="streaming-cursor">|</span>
       </div>
@@ -83,6 +90,8 @@ const sessionId = ref<number>(Number(null));
 const question = ref<string>("");
 /** 回答内容 HTML */
 const answerHtml = ref<string>("");
+/** 等待首个 Token 时的状态文案 */
+const statusText = ref<string>("");
 
 onMounted(async () => {
   const res = await listCategories({
@@ -98,6 +107,7 @@ const submit = async () => {
   loading.value = true;
   streaming.value = true;
   answerHtml.value = "";
+  statusText.value = "正在检索知识库，请稍候";
   let rawContent = "";
 
   const ids = categoryIds.value
@@ -110,6 +120,11 @@ const submit = async () => {
       categoryIds: ids.length ? ids : [],
     },
     {
+      onStatus(type, message) {
+        const fallback =
+          type === "tool_calling" ? "正在调用工具…" : "正在思考…";
+        statusText.value = message || fallback;
+      },
       onToken(content) {
         rawContent += content;
         answerHtml.value = marked.parse(rawContent) as string;
@@ -118,6 +133,7 @@ const submit = async () => {
         sessionId.value = Number(sid);
         loading.value = false;
         streaming.value = false;
+        statusText.value = "";
         streamController = null;
       },
       onError(message) {
@@ -128,6 +144,7 @@ const submit = async () => {
         }
         loading.value = false;
         streaming.value = false;
+        statusText.value = "";
         streamController = null;
       },
     },
@@ -141,6 +158,7 @@ const stopGeneration = () => {
   }
   loading.value = false;
   streaming.value = false;
+  statusText.value = "";
 };
 </script>
 
@@ -173,6 +191,58 @@ const stopGeneration = () => {
   font-weight: 700;
   color: #6366f1;
   animation: blink 1s step-end infinite;
+}
+
+/* —— 等待首个 Token 的“思考中”动效 —— */
+.thinking-answer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #475569;
+}
+.thinking-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.thinking-dots .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #6366f1, #7c3aed);
+  animation: thinking-bounce 1.2s ease-in-out infinite;
+}
+.thinking-dots .dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.thinking-dots .dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.thinking-text {
+  font-size: 14px;
+  font-weight: 500;
+  animation: thinking-fade 1.6s ease-in-out infinite;
+}
+@keyframes thinking-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  30% {
+    transform: translateY(-5px);
+    opacity: 1;
+  }
+}
+@keyframes thinking-fade {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 @keyframes blink {
   0%,

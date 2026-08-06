@@ -26,8 +26,21 @@
         <el-icon class="sys-icon"><ChatDotRound /></el-icon>
       </div>
       <div class="bubble">
-        <div class="body" v-html="html" />
-        <span v-if="streaming" class="streaming-cursor">|</span>
+        <template v-if="waiting">
+          <div class="thinking" aria-live="polite">
+            <span class="thinking-dots" aria-hidden="true"
+              ><span class="dot"></span><span class="dot"></span
+              ><span class="dot"></span></span
+            >
+            <span class="thinking-text">{{
+              status || "正在思考，请稍候"
+            }}</span>
+          </div>
+        </template>
+        <template v-else>
+          <div class="body" v-html="html" />
+          <span v-if="streaming" class="streaming-cursor">|</span>
+        </template>
         <div v-if="refs?.length" class="refs-bot">
           <button
             type="button"
@@ -81,6 +94,8 @@ const props = defineProps<{
   refs: RefItem[];
   /** 是否正在流式生成中 */
   streaming?: boolean;
+  /** 等待首个 Token 时的状态文案（如“正在检索知识库…”） */
+  status?: string;
   /** 用户消息右侧头像 */
   userAvatarSrc?: string;
   userAvatarText?: string;
@@ -88,6 +103,11 @@ const props = defineProps<{
 }>();
 
 const html = computed(() => marked.parse(props.content || ""));
+
+/** 是否处于等待首个 Token 阶段：流式已开始但尚无任何内容 */
+const waiting = computed(
+  () => !!props.streaming && !props.content?.trim(),
+);
 
 /** 助手引用默认收起 */
 const refsOpen = ref(false);
@@ -318,6 +338,59 @@ const refsCount = computed(() => props.refs?.length ?? 0);
   color: #6366f1;
   animation: blink 1s step-end infinite;
   margin-left: 1px;
+}
+
+/* —— 等待首个 Token 的“思考中”动效 —— */
+.thinking {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 24px;
+  font-size: 14px;
+  color: #64748b;
+}
+.thinking-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.thinking-dots .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #6366f1, #7c3aed);
+  animation: thinking-bounce 1.2s ease-in-out infinite;
+}
+.thinking-dots .dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.thinking-dots .dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.thinking-text {
+  font-weight: 500;
+  animation: thinking-fade 1.6s ease-in-out infinite;
+}
+@keyframes thinking-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.45;
+  }
+  30% {
+    transform: translateY(-5px);
+    opacity: 1;
+  }
+}
+@keyframes thinking-fade {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 @keyframes blink {
   0%,

@@ -15,6 +15,21 @@
               >新对话</el-button
             >
           </div>
+          <!-- 总数 + 每页条数（与底部分页共享 page/size/total 状态） -->
+          <div class="side-meta">
+            <el-pagination
+              v-model:current-page="page"
+              v-model:page-size="size"
+              :page-sizes="[10, 100, 200, 300, 400]"
+              :size="componentSize"
+              :disabled="disabled"
+              :background="background"
+              layout="total, sizes"
+              :total="total"
+              @size-change="handleSizeChange"
+              @current-change="handleCurrentChange"
+            />
+          </div>
           <!-- 会话列表 -->
           <div class="sess-list">
             <div
@@ -35,7 +50,7 @@
               />
             </div>
           </div>
-          <!-- 分页插件 -->
+          <!-- 分页插件：底部仅保留翻页 + 前往X页，保证单行显示 -->
           <div class="side-pagination">
             <el-pagination
               v-model:current-page="page"
@@ -44,7 +59,7 @@
               :size="componentSize"
               :disabled="disabled"
               :background="background"
-              layout="total, sizes, prev, pager, next, jumper"
+              layout="prev, pager, next, jumper"
               :total="total"
               @size-change="handleSizeChange"
               @current-change="handleCurrentChange"
@@ -85,36 +100,20 @@
                 idx === messages.length - 1 &&
                 m.role === 'ASSISTANT'
               "
+              :status="statusText"
               :user-avatar-src="chatUserAvatarSrc"
               :user-avatar-text="chatUserAvatarText"
               :user-avatar-style="chatUserAvatarStyle"
             />
-            <div
-              v-if="sending && !streaming"
-              class="pending-row"
-              aria-live="polite"
-            >
-              <div class="pending-sys-icon">
-                <el-icon class="pending-sys-ic">
-                  <ChatDotRound />
-                </el-icon>
-              </div>
-              <div class="pending-bubble">
-                <span class="pending-label">系统正在检索中，请稍等</span>
-                <span class="pending-dots" aria-hidden="true"
-                  ><span>.</span><span>.</span><span>.</span></span
-                >
-              </div>
-            </div>
           </div>
           <div class="input-bar">
             <el-input
               v-model="input"
               type="textarea"
               :rows="3"
+              class="input-textarea"
               placeholder="输入问题，Enter 发送（Shift+Enter 换行）"
               @keydown.enter.exact.prevent="send"
-              style="width: 68vw"
             />
             <el-button
               v-if="!streaming"
@@ -141,7 +140,6 @@ import { ComponentSize } from "element-plus";
 import { useUserStore } from "../../stores/user";
 import { formatDateTime } from "../../utils/date";
 import { listCategories } from "../../api/category";
-import { ChatDotRound } from "@element-plus/icons-vue";
 import { Category } from "../../data/category/Category";
 import ChatMessage from "../../components/ChatMessage.vue";
 import { avatarFallbackBg } from "../../utils/avatarFallback";
@@ -189,6 +187,8 @@ const sending = ref<boolean>(false);
 let streamController: AbortController | null = null;
 /*是否正在流式生成中*/
 const streaming = ref<boolean>(false);
+/*等待首个 Token 时的状态文案（如“正在检索知识库…”）*/
+const statusText = ref<string>("");
 /*会话消息 HTML 元素*/
 const msgEl = ref<HTMLElement | null>(null);
 
@@ -237,7 +237,12 @@ const loadSessions = async () => {
     size: Number(size.value),
     condition: {},
   });
-  sessions.value = res.data;
+  sessions.value = res.data ?? [];
+  /* 同步后端返回的总记录数, 供分页组件展示“共 X 条”并据此计算总页数 */
+  total.value = Number(res.total) || 0;
+  /* 同步后端实际生效的页码/页大小, 保证前端分页状态与后端一致(如后端对越界页码做了修正) */
+  if (Number(res.page) > 0) page.value = Number(res.page);
+  if (Number(res.size) > 0) size.value = Number(res.size);
 };
 
 /*会话选择*/
@@ -260,6 +265,7 @@ const send = async () => {
   if (!q || sending.value) return;
   sending.value = true;
   streaming.value = true;
+  statusText.value = "正在检索知识库，请稍候";
   const sid = activeId.value;
   messages.value = [
     ...messages.value,
@@ -295,8 +301,11 @@ const send = async () => {
   streamController = askStream(
     { question: q, sessionId: sid, categoryIds: ids.length ? ids : null },
     {
-      onStatus(_type, _message) {
-        // 可用于展示 "正在检索知识库..." 等状态
+      onStatus(type, message) {
+        // 展示后端推送的阶段状态，如 "正在检索知识库..."、"正在调用工具..."
+        const fallback =
+          type === "tool_calling" ? "正在调用工具…" : "正在思考…";
+        statusText.value = message || fallback;
       },
       onToken(content) {
         const last = messages.value[messages.value.length - 1];
@@ -311,6 +320,7 @@ const send = async () => {
         activeId.value = Number(sessionId);
         sending.value = false;
         streaming.value = false;
+        statusText.value = "";
         streamController = null;
         loadSessions();
         scrollMsgToBottom();
@@ -322,6 +332,7 @@ const send = async () => {
         }
         sending.value = false;
         streaming.value = false;
+        statusText.value = "";
         streamController = null;
         scrollMsgToBottom();
       },
@@ -337,6 +348,7 @@ const stopGeneration = () => {
   }
   sending.value = false;
   streaming.value = false;
+  statusText.value = "";
 };
 
 /*删除会话*/
@@ -395,22 +407,35 @@ watch(sending, (v) => {
 .chat-wrap {
   width: 100%;
   height: 100%;
+  min-height: 0;
 }
 
 .card {
   border-radius: 20px;
   border: none;
   overflow: hidden;
-  width: 96vw;
-  height: 86vh;
-  margin: 20px auto;
+  /* 宽度随容器伸缩但限制最大值, 避免超宽屏下卡片被过度拉伸 */
+  width: min(1560px, 100%);
+  /* 高度跟随容器剩余高度(外层为确定高度的 flex 布局), 适配任意分辨率 */
+  height: 100%;
+  min-height: 480px;
+  margin: 0 auto;
+}
+
+/* 卡片内部去除默认内边距, 让布局撑满 */
+.card :deep(.el-card__body) {
+  padding: 0;
+  height: 100%;
 }
 
 .layout {
   display: grid;
-  grid-template-columns: 320px 1fr;
-  width: 17vw;
-  height: 83vh;
+  /* 侧栏固定像素宽度, 主区弹性占满剩余空间, 不再依赖 vw */
+  grid-template-columns: clamp(220px, 20%, 320px) minmax(0, 1fr);
+  /* 行高明确为 100%, 防止子元素被默认 stretch 拉伸超出容器导致底部被裁剪 */
+  grid-template-rows: 100%;
+  width: 100%;
+  height: 100%;
 }
 
 .side {
@@ -419,13 +444,32 @@ watch(sending, (v) => {
   padding: 12px 10px;
   display: flex;
   flex-direction: column;
-  width: 16vw;
-  height: 80vh;
+  height: 100%;
+  min-height: 0;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .side-head {
   margin-bottom: 10px;
+}
+
+/* 侧栏头部下方: 总数 + 每页条数, 单行居中 */
+.side-meta {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.side-meta :deep(.el-pagination) {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.side-meta :deep(.el-pagination .el-select) {
+  width: 78px;
 }
 
 .sess-list {
@@ -440,10 +484,26 @@ watch(sending, (v) => {
   flex-shrink: 0;
   padding: 4px 0;
   flex-direction: row;
+  /* 底部仅保留翻页+跳转 4 组控件, 宽度充足, 强制单行并居中 */
   flex-wrap: nowrap;
-  align-content: center;
   justify-content: center;
   align-items: center;
+}
+
+/* 分页内部控件强制单行, 压缩尺寸以适配窄侧栏 */
+.side-pagination :deep(.el-pagination) {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  justify-content: center;
+  align-items: center;
+  font-size: 12px;
+}
+
+/* 收紧各控件间距, 进一步节省横向空间 */
+.side-pagination :deep(.el-pagination .el-pager li),
+.side-pagination :deep(.el-pagination button) {
+  min-width: 22px;
+  padding: 0 4px;
 }
 
 .sess {
@@ -483,10 +543,12 @@ watch(sending, (v) => {
   display: flex;
   flex-direction: column;
   background: #f8fafc;
-  width: 77vw;
-  height: 80vh;
-  margin-left: 6vw;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .filters {
@@ -498,7 +560,14 @@ watch(sending, (v) => {
 .message {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 18px 100px;
+  padding: 16px 18px 24px;
+}
+
+/* 消息内容限制最大宽度并居中, 超宽屏下阅读体验不变形 */
+.message > * {
+  max-width: min(920px, 100%);
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .empty {
@@ -508,84 +577,6 @@ watch(sending, (v) => {
   font-size: 14px;
 }
 
-.pending-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.pending-sys-icon {
-  flex-shrink: 0;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: linear-gradient(145deg, #6366f1, #7c3aed);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
-  margin-top: 2px;
-  animation: pending-pulse 1.6s ease-in-out infinite;
-}
-
-.pending-sys-ic {
-  font-size: 22px;
-}
-
-.pending-bubble {
-  max-width: min(420px, 88%);
-  padding: 12px 16px;
-  border-radius: 18px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
-  font-size: 14px;
-  color: #475569;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.pending-label {
-  font-weight: 500;
-}
-
-.pending-dots span {
-  animation: dot-fade 1.2s ease-in-out infinite;
-}
-
-.pending-dots span:nth-child(2) {
-  animation-delay: 0.2s;
-}
-
-.pending-dots span:nth-child(3) {
-  animation-delay: 0.4s;
-}
-
-@keyframes pending-pulse {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.92;
-    transform: scale(0.97);
-  }
-}
-
-@keyframes dot-fade {
-  0%,
-  100% {
-    opacity: 0.25;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
 .input-bar {
   display: flex;
   gap: 12px;
@@ -593,14 +584,18 @@ watch(sending, (v) => {
   background: #fff;
   border-top: 1px solid #e2e8f0;
   align-items: center;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  align-content: center;
-  justify-content: flex-start;
+}
+
+/* 输入框占满剩余宽度, 上限 820px, 不再使用 vw 固定宽度 */
+.input-textarea {
+  flex: 1;
+  min-width: 0;
+  width: min(820px, 100%);
 }
 
 .send {
-  height: 4vh;
-  width: 4vw;
+  flex-shrink: 0;
+  height: 40px;
+  min-width: 76px;
 }
 </style>

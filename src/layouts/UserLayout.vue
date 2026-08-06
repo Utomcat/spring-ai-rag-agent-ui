@@ -69,7 +69,9 @@ function logout() {
 
 <style scoped>
 .user-shell {
-  min-height: 100vh;
+  /* 使用确定的 100vh 高度 + flex 列布局, 让内部页面可按剩余高度撑满 */
+  height: 100vh;
+  overflow: hidden;
   background: linear-gradient(180deg, #f8fafc 0%, #e0e7ff 100%);
 }
 .top {
@@ -79,6 +81,7 @@ function logout() {
   backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(99, 102, 241, 0.12);
   height: 58px !important;
+  flex-shrink: 0;
 }
 .logo-line {
   display: flex;
@@ -133,12 +136,9 @@ function logout() {
   text-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
 }
 .main {
-  padding: 20px 24px 32px;
-  max-width: 100vw;
-  max-height: 94vh;
-  margin: 0 auto;
+  padding: 20px 24px 24px;
   width: 100%;
-  height: 100%;
   box-sizing: border-box;
+  overflow: auto;
 }
 </style>
