@@ -10,7 +10,7 @@
               <div class="avatar-row">
                 <el-avatar
                   :size="88"
-                  :src="profile.avatar ? fileUrl(profile.avatar) : undefined"
+                  :src="avatarSrc || undefined"
                   class="av av-text"
                   :style="profileAvStyle"
                 >
@@ -69,7 +69,7 @@
 
 <script lang="ts" setup>
 import { User } from '../../data/user/User'
-import { fileUrl } from '../../utils/files'
+import { useAuthFileUrl } from '../../utils/files'
 import { Plus } from '@element-plus/icons-vue'
 import { ref, onMounted, computed } from 'vue'
 import { useUserStore } from '../../stores/user'
@@ -82,6 +82,9 @@ const profile = ref<User>({})
 const pwd = ref({ old: '', neu: '', neu2: '' })
 const userStore = useUserStore()
 const avatarUploading = ref(false)
+
+// 头像文件需带鉴权下载(/files/** 不再匿名放行), 经 objectURL 缓存后绑定
+const avatarSrc = useAuthFileUrl(() => profile.value.avatar)
 
 const profileAvStyle = computed(() =>
     profile.value.avatar ? undefined : avatarFallbackBg(profile.value.username),

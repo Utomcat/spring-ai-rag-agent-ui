@@ -53,9 +53,92 @@ const routes = [
                 component: () => import('../views/admin/DocumentManage.vue')
             },
             {
+                path: 'tags',
+                name: 'AdminTags',
+                component: () => import('../views/admin/TagManage.vue')
+            },
+            {
                 path: 'chat-test',
                 name: 'AdminChatTest',
                 component: () => import('../views/admin/ChatTest.vue')
+            },
+            {
+                path: 'ingest-jobs',
+                name: 'AdminIngestJobs',
+                component: () => import('../views/admin/IngestJobManage.vue'),
+                meta: {title: '入库任务'},
+            },
+            {
+                path: 'tenants',
+                name: 'AdminTenants',
+                component: () => import('../views/admin/TenantManage.vue'),
+                meta: {title: '租户管理'},
+            },
+            {
+                path: 'permissions',
+                name: 'AdminPermissions',
+                component: () => import('../views/admin/PermissionManage.vue'),
+                meta: {title: '知识库权限'},
+            },
+            {
+                path: 'model-configs',
+                name: 'AdminModelConfigs',
+                component: () => import('../views/admin/ModelConfigManage.vue'),
+                meta: {title: '模型配置'},
+            },
+            {
+                path: 'system-configs',
+                name: 'AdminSystemConfigs',
+                component: () => import('../views/admin/SystemConfigManage.vue'),
+                meta: {title: '系统配置'},
+            },
+            {
+                path: 'announcements',
+                name: 'AdminAnnouncements',
+                component: () => import('../views/admin/AnnouncementManage.vue'),
+                meta: {title: '系统公告'},
+            },
+            {
+                path: 'eval',
+                name: 'AdminEval',
+                component: () => import('../views/admin/EvalManage.vue'),
+                meta: {title: '评估体系'},
+            },
+            {
+                path: 'agents',
+                name: 'AdminAgents',
+                component: () => import('../views/admin/AgentManage.vue'),
+                meta: {title: 'Agent 管理'},
+            },
+            {
+                path: 'retentions',
+                name: 'AdminRetentions',
+                component: () => import('../views/admin/RetentionManage.vue'),
+                meta: {title: '数据保留'},
+            },
+            {
+                path: 'feedbacks',
+                name: 'AdminFeedbacks',
+                component: () => import('../views/admin/FeedbackManage.vue'),
+                meta: {title: '消息反馈'},
+            },
+            {
+                path: 'api-keys',
+                name: 'AdminApiKeys',
+                component: () => import('../views/admin/ApiKeyManage.vue'),
+                meta: {title: 'API 密钥'},
+            },
+            {
+                path: 'webhooks',
+                name: 'AdminWebhooks',
+                component: () => import('../views/admin/WebhookManage.vue'),
+                meta: {title: 'Webhook'},
+            },
+            {
+                path: 'plugins',
+                name: 'AdminPlugins',
+                component: () => import('../views/admin/PluginManage.vue'),
+                meta: {title: '插件管理'},
             },
             {
                 path: 'profile',

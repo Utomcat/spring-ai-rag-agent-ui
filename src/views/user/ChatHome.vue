@@ -104,6 +104,10 @@
               :user-avatar-src="chatUserAvatarSrc"
               :user-avatar-text="chatUserAvatarText"
               :user-avatar-style="chatUserAvatarStyle"
+              :message-id="m.id"
+              :my-feedback="feedbacks[m.id]"
+              @feedback="handleFeedback"
+              @cancel-feedback="handleCancelFeedback"
             />
           </div>
           <div class="input-bar">
@@ -135,7 +139,7 @@
 
 <script lang="ts" setup>
 import { useRoute } from "vue-router";
-import { fileUrl } from "../../utils/files";
+import { useAuthFileUrl } from "../../utils/files";
 import { ComponentSize } from "element-plus";
 import { useUserStore } from "../../stores/user";
 import { formatDateTime } from "../../utils/date";
@@ -152,6 +156,13 @@ import {
   listMessages,
   listSessions,
 } from "../../api/chat";
+import {
+  MessageFeedback,
+  submitFeedback,
+  fetchMyFeedback,
+  cancelFeedback,
+} from "../../api/messageFeedback";
+import { ElMessage } from "element-plus";
 
 const route = useRoute();
 const userStore = useUserStore();
@@ -191,11 +202,14 @@ const streaming = ref<boolean>(false);
 const statusText = ref<string>("");
 /*会话消息 HTML 元素*/
 const msgEl = ref<HTMLElement | null>(null);
+/*会话消息单页拉取条数(后端上限 100)*/
+const MESSAGE_PAGE_SIZE = 100;
 
-/*聊天用户头像转换*/
-const chatUserAvatarSrc = computed(() =>
-  userStore.user?.avatar ? fileUrl(userStore.user.avatar) : "",
-);
+/*消息反馈缓存 - key 为 messageId, value 为当前用户对该消息的反馈*/
+const feedbacks = ref<Record<number, MessageFeedback | null>>({});
+
+/*聊天用户头像转换 - 头像文件需带鉴权下载(/files/** 不再匿名放行), 经 objectURL 缓存后绑定*/
+const chatUserAvatarSrc = useAuthFileUrl(() => userStore.user?.avatar);
 /*用户聊天用户名*/
 const chatUserAvatarText = computed(() =>
   (userStore.user?.realName || userStore.user?.username || "?").slice(0, 1),
@@ -245,12 +259,32 @@ const loadSessions = async () => {
   if (Number(res.size) > 0) size.value = Number(res.size);
 };
 
-/*会话选择*/
+/*会话选择 - 消息接口已改分页(破坏性变更), 后端按消息 ID 升序返回, 拉取最后一页即最新消息*/
 const selectSession = async (id: number) => {
   activeId.value = id;
-  let res = await listMessages(id);
-  messages.value = res.data;
+  let res = await listMessages(id, 1, MESSAGE_PAGE_SIZE);
+  const totalMessages = Number(res.total) || 0;
+  const lastPage = Math.max(1, Math.ceil(totalMessages / MESSAGE_PAGE_SIZE));
+  if (lastPage > 1) {
+    res = await listMessages(id, lastPage, MESSAGE_PAGE_SIZE);
+  }
+  messages.value = res.data ?? [];
+  // 加载消息反馈
+  await loadFeedbacks();
   await scrollMsgToBottom();
+};
+
+/*加载当前页消息的反馈状态*/
+const loadFeedbacks = async () => {
+  const assistantMessages = messages.value.filter(m => m.role === 'ASSISTANT' && m.id);
+  for (const msg of assistantMessages) {
+    try {
+      const res = await fetchMyFeedback(msg.id!);
+      feedbacks.value[msg.id!] = res.data;
+    } catch {
+      feedbacks.value[msg.id!] = null;
+    }
+  }
 };
 
 /*新建聊天*/
@@ -401,6 +435,29 @@ watch(
 watch(sending, (v) => {
   if (v) scrollMsgToBottom();
 });
+
+/*提交反馈*/
+const handleFeedback = async (messageId: number, rating: number) => {
+  try {
+    await submitFeedback({ messageId, rating });
+    const res = await fetchMyFeedback(messageId);
+    feedbacks.value[messageId] = res.data;
+    ElMessage.success(rating === 3 ? '感谢点赞' : '感谢反馈');
+  } catch (e) {
+    ElMessage.error('反馈提交失败');
+  }
+};
+
+/*取消反馈*/
+const handleCancelFeedback = async (messageId: number) => {
+  try {
+    await cancelFeedback(messageId);
+    feedbacks.value[messageId] = null;
+    ElMessage.success('反馈已取消');
+  } catch (e) {
+    ElMessage.error('取消反馈失败');
+  }
+};
 </script>
 
 <style scoped>
@@ -561,6 +618,25 @@ watch(sending, (v) => {
   flex: 1;
   overflow-y: auto;
   padding: 16px 18px 24px;
+  /* Firefox 细滚动条 */
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+/* Webkit 细滚动条: 默认半透明, 悬停加深, 替代原生粗滚动条 */
+.message::-webkit-scrollbar {
+  width: 6px;
+}
+.message::-webkit-scrollbar-track {
+  background: transparent;
+}
+.message::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+  transition: background 0.2s ease;
+}
+.message::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 /* 消息内容限制最大宽度并居中, 超宽屏下阅读体验不变形 */

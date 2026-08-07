@@ -11,14 +11,14 @@
         <el-button type="success" icon="Plus" @click="openCreate">新增分类</el-button>
       </div>
       <el-table :data="list" v-loading="loading" stripe style="height: 81vh;">
-        <el-table-column prop="id" label="ID" width="70" />
+        <el-table-column prop="id" label="ID" v-if="false" />
         <el-table-column prop="name" label="名称" />
         <el-table-column prop="description" label="描述" show-overflow-tooltip />
         <el-table-column prop="sortOrder" label="排序" width="90" />
         <el-table-column label="创建时间" width="170">
           <template #default="{ row }">{{ formatDateTime(row['createTime']) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
             <el-button link type="danger" @click="del(row)">删除</el-button>
@@ -37,7 +37,7 @@
           background
           @current-change="load"
           @size-change="sizeChange"
-          style="height: 3.5vh;"
+          style="height: 3.5vh; justify-content: flex-end;"
       />
     </el-card>
 

@@ -8,7 +8,7 @@
         <el-button type="success" icon="Plus" @click="openCreate">新增用户</el-button>
       </div>
       <el-table :data="list" v-loading="loading" stripe style="height: 81vh;">
-        <el-table-column prop="id" label="ID" width="70" />
+        <el-table-column prop="id" label="ID" v-if="false" />
         <el-table-column prop="username" label="用户名" />
         <el-table-column prop="realName" label="姓名" />
         <el-table-column prop="role" label="角色" width="100" />
@@ -18,7 +18,7 @@
         <el-table-column label="创建时间" width="170">
           <template #default="{ row }">{{ formatDateTime(row['createTime']) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column label="操作" width="240" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
             <el-button link type="danger" @click="del(row)">删除</el-button>

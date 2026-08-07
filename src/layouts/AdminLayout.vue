@@ -11,9 +11,22 @@ import {
   SwitchButton,
   Postcard,
   ArrowDown,
+  PriceTag,
+  Setting,
+  Key,
+  Link as LinkIcon,
+  Connection,
+  OfficeBuilding,
+  Lock,
+  Cpu,
+  Bell,
+  DataAnalysis,
+  Timer,
+  Comment,
+  Delete as DeleteIcon,
 } from '@element-plus/icons-vue'
 import { useUserStore } from '../stores/user.ts'
-import { fileUrl } from '../utils/files.ts'
+import { useAuthFileUrl } from '../utils/files.ts'
 import { avatarFallbackBg } from '../utils/avatarFallback.ts'
 
 const route = useRoute()
@@ -21,7 +34,8 @@ const router = useRouter()
 const store = useUserStore()
 
 const active = computed(() => route.path)
-const avatarSrc = computed(() => fileUrl(store.user?.avatar))
+// 头像文件需带鉴权下载(/files/** 不再匿名放行), 经 objectURL 缓存后绑定
+const avatarSrc = useAuthFileUrl(() => store.user?.avatar)
 const avatarText = computed(() => (store.user?.realName || store.user?.username || '?').slice(0, 1))
 const headerAvStyle = computed(() =>
   store.user?.avatar ? undefined : avatarFallbackBg(store.user?.username),
@@ -68,6 +82,7 @@ function onHeaderCommand(cmd) {
       </div>
       <el-menu
         :default-active="active"
+        :unique-opened="true"
         class="menu"
         background-color="#0f172a"
         text-color="#94a3b8"
@@ -78,22 +93,54 @@ function onHeaderCommand(cmd) {
           <el-icon><Odometer /></el-icon>
           <span>数据概览</span>
         </el-menu-item>
-        <el-menu-item index="/admin/users">
-          <el-icon><User /></el-icon>
-          <span>用户管理</span>
-        </el-menu-item>
-        <el-menu-item index="/admin/categories">
-          <el-icon><FolderOpened /></el-icon>
-          <span>知识分类</span>
-        </el-menu-item>
-        <el-menu-item index="/admin/documents">
-          <el-icon><Document /></el-icon>
-          <span>文档管理</span>
-        </el-menu-item>
-        <el-menu-item index="/admin/chat-test">
-          <el-icon><ChatLineRound /></el-icon>
-          <span>问答测试</span>
-        </el-menu-item>
+        <el-sub-menu index="kb">
+          <template #title>
+            <el-icon><FolderOpened /></el-icon>
+            <span>知识管理</span>
+          </template>
+          <el-menu-item index="/admin/categories">知识分类</el-menu-item>
+          <el-menu-item index="/admin/documents">文档管理</el-menu-item>
+          <el-menu-item index="/admin/tags">文档标签</el-menu-item>
+          <el-menu-item index="/admin/ingest-jobs">入库任务</el-menu-item>
+        </el-sub-menu>
+        <el-sub-menu index="security">
+          <template #title>
+            <el-icon><Lock /></el-icon>
+            <span>安全与权限</span>
+          </template>
+          <el-menu-item index="/admin/users">用户管理</el-menu-item>
+          <el-menu-item index="/admin/tenants">租户管理</el-menu-item>
+          <el-menu-item index="/admin/permissions">知识库权限</el-menu-item>
+        </el-sub-menu>
+        <el-sub-menu index="ops">
+          <template #title>
+            <el-icon><Setting /></el-icon>
+            <span>系统运维</span>
+          </template>
+          <el-menu-item index="/admin/model-configs">模型配置</el-menu-item>
+          <el-menu-item index="/admin/system-configs">系统配置</el-menu-item>
+          <el-menu-item index="/admin/announcements">系统公告</el-menu-item>
+          <el-menu-item index="/admin/retentions">数据保留</el-menu-item>
+        </el-sub-menu>
+        <el-sub-menu index="ai">
+          <template #title>
+            <el-icon><DataAnalysis /></el-icon>
+            <span>智能运维</span>
+          </template>
+          <el-menu-item index="/admin/chat-test">问答测试</el-menu-item>
+          <el-menu-item index="/admin/eval">评估体系</el-menu-item>
+          <el-menu-item index="/admin/agents">Agent 管理</el-menu-item>
+          <el-menu-item index="/admin/feedbacks">消息反馈</el-menu-item>
+        </el-sub-menu>
+        <el-sub-menu index="platform">
+          <template #title>
+            <el-icon><Connection /></el-icon>
+            <span>开放平台</span>
+          </template>
+          <el-menu-item index="/admin/api-keys">API 密钥</el-menu-item>
+          <el-menu-item index="/admin/webhooks">Webhook</el-menu-item>
+          <el-menu-item index="/admin/plugins">插件管理</el-menu-item>
+        </el-sub-menu>
         <el-menu-item index="/admin/profile">
           <el-icon><Postcard /></el-icon>
           <span>个人中心</span>
@@ -113,7 +160,7 @@ function onHeaderCommand(cmd) {
           <span class="who who-trigger">
             <el-avatar
               :size="32"
-              :src="store.user?.avatar ? avatarSrc : undefined"
+              :src="avatarSrc || undefined"
               class="hdr-av hdr-av-text"
               :style="headerAvStyle"
             >

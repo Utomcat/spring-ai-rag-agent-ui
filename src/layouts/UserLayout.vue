@@ -22,7 +22,7 @@
       <div class="right">
         <el-avatar
           :size="36"
-          :src="store.user?.avatar ? avatarSrc : undefined"
+          :src="avatarSrc || undefined"
           class="hdr-av hdr-av-text"
           :style="headerAvStyle"
         >
@@ -46,12 +46,13 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ChatDotRound, Clock, User, SwitchButton } from '@element-plus/icons-vue'
 import { useUserStore } from '../stores/user.ts'
-import { fileUrl } from '../utils/files.ts'
+import { useAuthFileUrl } from '../utils/files.ts'
 import { avatarFallbackBg } from '../utils/avatarFallback.ts'
 
 const router = useRouter()
 const store = useUserStore()
-const avatarSrc = computed(() => fileUrl(store.user?.avatar))
+// 头像文件需带鉴权下载(/files/** 不再匿名放行), 经 objectURL 缓存后绑定
+const avatarSrc = useAuthFileUrl(() => store.user?.avatar)
 const avatarText = computed(() => (store.user?.realName || store.user?.username || '?').slice(0, 1))
 const headerAvStyle = computed(() =>
     store.user?.avatar ? undefined : avatarFallbackBg(store.user?.username),

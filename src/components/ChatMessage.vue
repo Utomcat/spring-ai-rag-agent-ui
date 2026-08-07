@@ -2,7 +2,7 @@
   <div class="row" :class="role === 'USER' ? 'user' : 'bot'">
     <template v-if="role === 'USER'">
       <div class="bubble">
-        <div class="body" v-html="html" />
+        <div class="body" v-html="html" @click="onBodyClick" />
         <div v-if="refs?.length" class="refs">
           <div class="r-title">引用片段</div>
           <div v-for="(r, i) in refs" :key="i" class="ref-item">
@@ -38,7 +38,7 @@
           </div>
         </template>
         <template v-else>
-          <div class="body" v-html="html" />
+          <div class="body" v-html="html" @click="onBodyClick" />
           <span v-if="streaming" class="streaming-cursor">|</span>
         </template>
         <div v-if="refs?.length" class="refs-bot">
@@ -75,8 +75,45 @@
             </div>
           </transition>
         </div>
+        <!-- 消息反馈：点赞/点踩 -->
+        <div v-if="!streaming && messageId" class="feedback-bar">
+          <span class="feedback-label">这个回答有帮助吗？</span>
+          <button
+            type="button"
+            class="feedback-btn"
+            :class="{ active: myFeedback?.rating === 3 }"
+            title="点赞"
+            @click="onFeedback(3)"
+          >
+            <el-icon><CircleCheck /></el-icon>
+          </button>
+          <button
+            type="button"
+            class="feedback-btn"
+            :class="{ active: myFeedback?.rating === 1 }"
+            title="点踩"
+            @click="onFeedback(1)"
+          >
+            <el-icon><CircleClose /></el-icon>
+          </button>
+          <button
+            v-if="myFeedback"
+            type="button"
+            class="feedback-btn feedback-cancel"
+            title="取消反馈"
+            @click="onCancelFeedback"
+          >
+            <el-icon><Close /></el-icon>
+          </button>
+        </div>
       </div>
     </template>
+    <!-- 消息内图片点击放大预览(v-html 无法绑定组件, 经事件委托获取 src 后交由 ElImageViewer) -->
+    <el-image-viewer
+      v-if="previewVisible"
+      :url-list="[previewSrc]"
+      @close="previewVisible = false"
+    />
   </div>
 </template>
 
@@ -84,7 +121,8 @@
 import { marked } from "marked";
 import { computed, ref } from "vue";
 import { RefItem } from "../data/ref/RefItem";
-import { ArrowDown, ChatDotRound, Document } from "@element-plus/icons-vue";
+import { ArrowDown, ChatDotRound, Document, CircleCheck, CircleClose, Close } from "@element-plus/icons-vue";
+import { MessageFeedback } from "../api/messageFeedback";
 
 marked.setOptions({ breaks: true });
 
@@ -94,12 +132,21 @@ const props = defineProps<{
   refs: RefItem[];
   /** 是否正在流式生成中 */
   streaming?: boolean;
-  /** 等待首个 Token 时的状态文案（如“正在检索知识库…”） */
+  /** 等待首个 Token 时的状态文案（如"正在检索知识库…"） */
   status?: string;
   /** 用户消息右侧头像 */
   userAvatarSrc?: string;
   userAvatarText?: string;
   userAvatarStyle?: Record<string, any>;
+  /** 消息 ID（用于反馈） */
+  messageId?: number;
+  /** 当前用户对该消息的反馈 */
+  myFeedback?: MessageFeedback | null;
+}>();
+
+const emit = defineEmits<{
+  (e: 'feedback', messageId: number, rating: number): void;
+  (e: 'cancelFeedback', messageId: number): void;
 }>();
 
 const html = computed(() => marked.parse(props.content || ""));
@@ -117,6 +164,34 @@ function toggleRefs() {
 }
 
 const refsCount = computed(() => props.refs?.length ?? 0);
+
+/** 图片预览地址 */
+const previewSrc = ref<string>("");
+/** 图片预览是否打开 */
+const previewVisible = ref<boolean>(false);
+
+/** 消息正文点击事件委托 - 命中 img 时打开大图预览 */
+function onBodyClick(e: MouseEvent) {
+  const img = (e.target as HTMLElement).closest("img");
+  if (img?.src) {
+    previewSrc.value = img.src;
+    previewVisible.value = true;
+  }
+}
+
+/** 提交反馈 */
+function onFeedback(rating: number) {
+  if (props.messageId) {
+    emit('feedback', props.messageId, rating);
+  }
+}
+
+/** 取消反馈 */
+function onCancelFeedback() {
+  if (props.messageId) {
+    emit('cancelFeedback', props.messageId);
+  }
+}
 </script>
 
 <style scoped>
@@ -166,7 +241,9 @@ const refsCount = computed(() => props.refs?.length ?? 0);
   text-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
 }
 .bubble {
-  /*max-width: min(680px, calc(92% - 48px));*/
+  /* 气泡限宽避免被大图/长内容无限撑开, 同时预留头像与间距空间 */
+  max-width: min(720px, calc(100% - 48px));
+  min-width: 0;
   border-radius: 18px;
   padding: 12px 16px;
   box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
@@ -184,6 +261,31 @@ const refsCount = computed(() => props.refs?.length ?? 0);
 .body :deep(p),
 .body :deep(li) {
   margin: 0.4em 0;
+}
+.body {
+  /* 长文本/长链接在气泡内自动换行, 避免横向溢出 */
+  overflow-wrap: anywhere;
+}
+/* 消息内图片: 限制在气泡可视区域内等比缩放, 超大图不再撑出长滚动条, 点击可放大 */
+.body :deep(img) {
+  display: block;
+  max-width: 100%;
+  max-height: 320px;
+  border-radius: 10px;
+  margin: 6px 0;
+  cursor: zoom-in;
+}
+/* 代码块与表格超宽时气泡内横向滚动, 不挤压外层布局 */
+.body :deep(pre) {
+  overflow-x: auto;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.05);
+}
+.body :deep(table) {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
 }
 .user .body :deep(a) {
   color: #e0e7ff;
@@ -400,5 +502,52 @@ const refsCount = computed(() => props.refs?.length ?? 0);
   50% {
     opacity: 0;
   }
+}
+
+/* —— 消息反馈栏 —— */
+.feedback-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(148, 163, 184, 0.4);
+  font-size: 13px;
+}
+.feedback-label {
+  color: #64748b;
+  margin-right: 4px;
+}
+.feedback-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.feedback-btn:hover {
+  border-color: #c7d2fe;
+  color: #6366f1;
+  background: #f1f5f9;
+}
+.feedback-btn.active {
+  border-color: #6366f1;
+  color: #6366f1;
+  background: #eef2ff;
+}
+.feedback-btn.feedback-cancel {
+  margin-left: 4px;
+  color: #94a3b8;
+}
+.feedback-btn.feedback-cancel:hover {
+  color: #ef4444;
+  border-color: #fecaca;
+  background: #fef2f2;
 }
 </style>

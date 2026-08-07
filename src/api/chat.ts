@@ -168,13 +168,15 @@ export function listSessions(params: Record<string, any>): Promise<MultiResult<S
 }
 
 /**
- * 获取会话消息列表
+ * 获取会话消息列表 - 分页查询 (破坏性变更: 后端不再支持全量拉取, page/size 为必传参数)
  *
  * @param sessionId - 会话 ID
+ * @param page - 页码, 从 1 开始
+ * @param size - 每页条数, 上限 100
  * @return Promise 响应数据
  */
-export function listMessages(sessionId: number): Promise<MultiResult<MessagesResponse>> {
-  return request.get(`/api/chat/session/${sessionId}/messages`)
+export function listMessages(sessionId: number, page: number, size: number): Promise<MultiResult<MessagesResponse>> {
+  return request.get(`/api/chat/session/${sessionId}/messages`, { params: { page, size } })
 }
 
 /**

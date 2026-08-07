@@ -31,6 +31,10 @@ request.interceptors.request.use(
  */
 request.interceptors.response.use(
     (res) => {
+        // Blob 响应（如带鉴权的文件下载）不走统一 Result 结构, 直接返回响应体
+        if (res.config.responseType === 'blob') {
+            return res.data
+        }
         const result: Result | MultiResult = res.data
         if (isSuccess(result)) {
             return res.data

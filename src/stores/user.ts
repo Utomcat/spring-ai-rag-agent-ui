@@ -1,6 +1,7 @@
 import {defineStore} from 'pinia'
 import {ref} from 'vue'
 import {User} from "../data/user/User.ts";
+import {clearAuthFileCache} from "../utils/files.ts";
 
 /**
  * 登录态：Token + 用户信息（本地持久化）。
@@ -23,6 +24,8 @@ export const useUserStore = defineStore('user', () => {
         user.value = null
         localStorage.removeItem('token')
         localStorage.removeItem('user')
+        // 释放带鉴权缓存的文件对象 URL, 避免下一账号复用旧文件缓存
+        clearAuthFileCache()
     }
 
     return {token, user, setLogin, logout}
