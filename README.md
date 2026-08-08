@@ -26,135 +26,35 @@
 
 ## 🎯 功能特性
 
-### 👥 双角色体系
+- **双角色体系**：管理员（知识管理、系统运维、数据统计）+ 普通用户（智能问答、会话管理）
+- **RAG 智能问答**：流式 SSE 实时输出，答案可追溯来源文档
+- **知识库管理**：多格式文档上传、自动解析向量化、分类标签管理
+- **多租户架构**：租户隔离、配额管控、独立知识库
+- **评估体系**：评估数据集 + 评估任务 + 结果明细，量化 RAG 效果
+- **平台化运营**：API 密钥、Webhook 订阅、插件注册
+- **实时统计**：多维度数据可视化仪表盘
 
-#### 管理员（ADMIN）
-
-- **📊 数据概览仪表盘**
-    - 核心指标卡片（用户总数、文档总数、向量总数、问答统计）
-    - 近 7 日问答趋势折线图
-    - 用户注册趋势图表
-    - 知识分类文档占比饼图
-
-- **👤 用户管理**
-    - 用户列表查询与分页
-    - 新增/编辑/删除用户
-    - 启用/禁用用户账号
-    - 用户角色分配
-
-- **📁 知识分类管理**
-    - 分类增删改查
-    - 分类层级展示
-
-- **📄 文档管理**
-    - 多格式文档上传（txt / pdf / doc / docx / md）
-    - 文档自动解析与向量化
-    - 按分类筛选文档
-    - 删除文档（同步清除向量数据）
-
-- **💬 聊天测试**
-    - 管理员专用测试聊天界面
-    - 验证 RAG 问答效果
-
-#### 普通用户（USER）
-
-- **🤖 知识库问答**
-    - 智能对话界面，异步问答（带检索中状态提示）
-    - Markdown 格式渲染答案
-    - 显示引用来源文档
-    - 按分类限定问答范围（可选）
-
-- **📋 多会话管理**
-    - 新建聊天会话
-    - 会话快速切换
-    - 删除历史会话
-
-- **📜 历史记录**
-    - 查看历史对话记录
-    - 按会话浏览聊天内容
-
-- **👤 个人中心**
-    - 查看/编辑个人资料
-    - 修改密码
-
-> 💡 管理员同样可访问个人中心页面（`/admin/profile`）。
-
-### 🔧 核心功能
-
-- **RAG 智能问答**：基于向量检索 + Ollama 大模型推理，答案可追溯来源文档
-- **文档向量化**：支持多种文档格式，自动解析、分块、向量化存储
-- **实时统计**：多维度数据可视化，直观展示系统运行状态
-- **权限控制**：基于角色的路由守卫，精准控制页面访问权限
-- **响应式布局**：适配不同屏幕尺寸，提供良好用户体验
+> 📖 详细功能说明请查看 [功能特性文档](docs/features.md)
 
 ## 📁 项目结构
 
 ```
 spring-ai-rag-ui/
-├── public/                     # 静态资源
-│   ├── favicon.svg             # 网站图标
-│   └── icons.svg               # SVG 图标
 ├── src/
-│   ├── api/                    # API 接口层
-│   │   ├── auth.ts             # 认证接口（登录）
-│   │   ├── category.ts         # 分类接口
-│   │   ├── chat.ts             # 聊天接口
-│   │   ├── document.ts         # 文档接口
-│   │   ├── stats.ts            # 统计接口
-│   │   └── user.ts             # 用户接口
-│   ├── assets/                 # 静态资源
-│   │   ├── hero.png            # 首页背景图
-│   │   ├── vite.svg            # Vite 图标
-│   │   └── vue.svg             # Vue 图标
-│   ├── components/             # 公共组件
-│   │   ├── ChatMessage.vue     # 聊天消息组件（支持 Markdown）
-│   │   └── StatCard.vue        # 统计卡片组件
-│   ├── data/                   # TypeScript 类型定义
-│   │   ├── category/           # 分类相关类型
-│   │   ├── chat/               # 聊天相关类型
-│   │   ├── document/           # 文档相关类型
-│   │   ├── login/              # 登录相关类型
-│   │   ├── page/               # 分页相关类型
-│   │   ├── ref/                # 引用来源类型
-│   │   ├── result/             # 统一响应结果类型
-│   │   ├── stats/              # 统计相关类型
-│   │   └── user/               # 用户相关类型
-│   ├── layouts/                # 布局组件
-│   │   ├── AdminLayout.vue     # 管理员布局（侧边栏 + 顶栏）
-│   │   └── UserLayout.vue      # 用户布局
-│   ├── router/                 # 路由配置
-│   │   └── index.ts            # 路由定义与守卫
-│   ├── stores/                 # Pinia 状态管理
-│   │   └── user.ts             # 用户状态（角色、Token 等）
-│   ├── utils/                  # 工具函数
-│   │   ├── avatarFallback.ts   # 头像回退处理
-│   │   ├── date.ts             # 日期格式化
-│   │   ├── files.ts            # 文件处理工具
-│   │   └── request.ts          # Axios 封装（拦截器、Token 注入）
-│   ├── views/                  # 页面视图
-│   │   ├── admin/              # 管理员端页面
-│   │   │   ├── Dashboard.vue   # 数据仪表盘
-│   │   │   ├── UserManage.vue  # 用户管理
-│   │   │   ├── CategoryManage.vue  # 分类管理
-│   │   │   ├── DocumentManage.vue  # 文档管理
-│   │   │   └── ChatTest.vue    # 聊天测试
-│   │   ├── user/               # 用户端页面
-│   │   │   ├── ChatHome.vue    # 智能问答首页
-│   │   │   ├── History.vue     # 历史记录
-│   │   │   └── Profile.vue     # 个人中心（管理员/用户共用）
-│   │   └── Login.vue           # 登录页
-│   ├── App.vue                 # 根组件
-│   ├── main.js                 # 应用入口
-│   ├── style.css               # 全局样式
-│   └── vite-env.d.ts           # Vite 类型声明
-├── .gitignore                  # Git 忽略配置
-├── .npmrc                      # npm 配置
-├── index.html                  # HTML 入口
-├── package.json                # 项目依赖
-├── tsconfig.json               # TypeScript 配置
-├── tsconfig.node.json          # TypeScript Node 配置
-└── vite.config.js              # Vite 配置
+│   ├── api/          # API 接口层（20 个）
+│   ├── components/   # 公共组件
+│   ├── data/         # TypeScript 类型定义（18 个模块）
+│   ├── layouts/      # 布局组件
+│   ├── router/       # 路由配置（27 条路由）
+│   ├── stores/       # Pinia 状态管理
+│   ├── utils/        # 工具函数
+│   └── views/        # 页面视图
+├── public/           # 静态资源
+├── docs/             # 详细文档
+└── 配置文件
 ```
+
+> 📖 完整目录结构请查看 [项目结构文档](docs/project-structure.md)
 
 ## 🚀 快速开始
 
@@ -193,7 +93,7 @@ npm run build
 构建产物将输出到 `dist/` 目录，包含以下优化：
 
 - **Gzip 压缩**：大于 10KB 的资源自动生成 `.gz` 文件
-- **代码分包**：按依赖拆分为 `vue-vendor`、`element-plus`、`utils`、`charts` 等独立 chunk
+- **代码分包**：按依赖拆分为 `vue-vendor`、`element-plus`、`utils`、`charts`、`vueuse` 等独立 chunk
 - **依赖预构建**：Vue、Vue Router、Pinia、Element Plus、Axios、ECharts 已配置 `optimizeDeps`
 
 ### 预览构建结果
@@ -204,122 +104,13 @@ npm run preview
 
 在本地预览生产构建结果。
 
-## ⚙️ 配置说明
+## 📚 更多文档
 
-### 后端服务代理
-
-开发环境通过 Vite 代理转发 API 请求，配置位于 `vite.config.js`：
-
-```
-server: {
-    port: 5173,
-    proxy: {
-      '/api': { target: 'http://localhost:8083', changeOrigin: true }
-      '/files': { target: 'http://localhost:8083', changeOrigin: true }
-    }
-}
-```
-
-如需修改后端服务地址，请调整上述配置。
-
-### 认证机制
-
-- **认证方式**：Bearer Token
-- **Token 存储**：localStorage
-- **请求拦截**：自动在请求头添加 `Authorization: Bearer <token>`
-- **响应拦截**：401 / 403 自动清除登录态并跳转登录页
-- **超时处理**：默认请求超时 120s；问答请求超时 1 小时（本地大模型推理耗时较长）
-
-### 环境变量
-
-可通过 `.env` 文件配置环境变量：
-
-```env
-# 开发环境
-VITE_API_BASE_URL=http://localhost:8083/api
-VITE_FILES_BASE_URL=http://localhost:8083/files
-```
-
-## 🌐 后端对接
-
-本项目为前端工程，需配合后端服务使用：
-
-- **后端技术栈**：Spring AI + Spring Boot
-- **向量数据库**：支持多种向量存储（如 Milvus、PgVector 等）
-- **大模型**：Ollama 本地部署
-- **API 文档**：请参考后端项目 Swagger 文档
-
-## 📦 部署指南
-
-### Nginx 部署
-
-1. 执行生产构建：`npm run build`
-2. 将 `dist/` 目录内容复制到 Nginx 静态资源目录
-3. 配置 Nginx：
-
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-
-    root /path/to/dist;
-    index index.html;
-
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    # API 代理
-    location /api/ {
-        proxy_pass http://localhost:8083;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-
-    # 文件访问代理
-    location /files/ {
-        proxy_pass http://localhost:8083;
-    }
-}
-```
-
-### Docker 部署
-
-```dockerfile
-FROM node:18-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-RUN npm run build
-
-FROM nginx:alpine
-COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
-```
-
-## 🛠️ 开发规范
-
-### 代码风格
-
-- 使用 ES Module 模块化
-- 组件采用 `<script setup>` 语法
-- TypeScript 类型定义位于 `src/data/` 目录
-- API 接口统一封装在 `src/api/` 目录
-
-### 提交规范
-
-建议使用 Conventional Commits 规范：
-
-```
-feat: 新增用户管理功能
-fix: 修复聊天会话切换问题
-docs: 更新项目文档
-style: 调整仪表盘样式
-refactor: 重构请求拦截器
-```
+- [功能特性详细说明](docs/features.md)
+- [项目结构目录详解](docs/project-structure.md)
+- [配置说明](docs/configuration.md)
+- [部署指南](docs/deployment.md)
+- [开发规范](docs/development-guide.md)
 
 ## 📸 系统截图
 
